@@ -1,15 +1,193 @@
-body {
-  background-color: #f8f9fa;
+/* ===== ESTILOS DE VISIBILIDAD CON PRIORIDAD ===== */
+.d-none {
+  display: none !important;
 }
 
+.d-flex {
+  display: flex !important;
+}
+
+.d-block {
+  display: block !important;
+}
+
+/* ===== ESTILOS DEL LOGIN ===== */
+.login-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  margin: 0;
+  padding: 0;
+}
+
+/* ===== ESTILOS GENERALES ===== */
+html,
+body {
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+body {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 100vh !important;
+  background-color: #f8f9fa;
+  transition: all 0.3s ease;
+}
+
+/* ===== APLICACIÓN PRINCIPAL - ESPECIFICIDAD AUMENTADA ===== */
+body #app {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100vh !important;
+  width: 100% !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+}
+
+/* Anular Bootstrap específicamente para #app */
+#app.w-100.d-block {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100vh !important;
+  width: 100% !important;
+}
+
+/* ===== HEADER ===== */
+body #app header {
+  flex-shrink: 0 !important;
+  z-index: 1000;
+  min-height: 60px;
+}
+
+/* ===== CONTENIDO PRINCIPAL - CORREGIDO ===== */
+body #app main {
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  padding: 20px 0 !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Contenedor del contenido dentro del main - ESPECIFICIDAD AUMENTADA */
+body #app main .container.my-4 {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Tabla y contenido principal */
+body #app main .container.my-4 .table-responsive.table-container {
+  flex: 1 !important;
+  min-height: 200px !important;
+  max-height: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Tabla dentro del contenedor */
+body #app main .container.my-4 .table-responsive.table-container table {
+  flex: 1 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Mensaje cuando no hay hoja seleccionada */
+body
+  #app
+  main
+  .container.my-4
+  .table-responsive.table-container:has(> table > tbody > tr > td.text-center) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 300px !important;
+}
+
+/* ===== FOOTER - ESPECIFICIDAD AUMENTADA ===== */
+body #app footer {
+  flex-shrink: 0 !important;
+  width: 100% !important;
+  z-index: 1000;
+  margin-top: 0 !important;
+  position: relative !important;
+}
+
+/* Anular Bootstrap para el footer */
+footer.bg-dark.text-center.text-white.py-3.mt-auto {
+  margin-top: 0 !important;
+  position: relative !important;
+}
+
+/* ===== CONTENEDOR DE LOGIN ===== */
+.login-container {
+  height: 100vh !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* ===== TABLA CON SCROLL - CORREGIDO ===== */
 .table-container {
-  max-height: 400px;
-  overflow-y: auto;
-  scrollbar-width: none; /* Firefox */
+  flex: 1 !important;
+  overflow-y: auto !important;
+  scrollbar-width: none !important;
+  min-height: 200px !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 .table-container::-webkit-scrollbar {
-  display: none; /* Chrome, Safari */
+  display: none !important;
+}
+
+/* ===== ESTILOS PARA CUANDO NO HAY CONTENIDO ===== */
+.empty-state {
+  flex: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 300px !important;
+  text-align: center !important;
+  color: #6c757d !important;
+  width: 100% !important;
+}
+
+.empty-state h3 {
+  margin-bottom: 1rem !important;
+}
+
+.empty-state p {
+  margin-bottom: 2rem !important;
+}
+
+/* Forzar que la celda de la tabla ocupe todo el espacio */
+.table-container table tbody tr td {
+  height: 100% !important;
+  vertical-align: middle !important;
+}
+
+.table-container table tbody tr {
+  height: 100% !important;
+}
+
+/* Asegurar que la tabla ocupe todo el espacio disponible */
+.table-container table {
+  height: 100% !important;
+  margin-bottom: 0 !important;
+}
+
+.table-container table tbody {
+  height: 100% !important;
+  display: table !important;
+  width: 100% !important;
 }
 
 /* Colores semáforo */
@@ -25,34 +203,140 @@ body {
 
 /* Sticky header */
 thead.sticky-top th {
-  position: sticky;
-  top: 0;
-  z-index: 2;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 2 !important;
 }
 
-/* Estilos para los campos de edición */
-.note-field,
-.attendance-field {
-  display: flex;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-
-.note-field input,
-.attendance-field input,
-.attendance-field select {
-  margin-right: 0.5rem;
-}
+/* Mejoras para los inputs de notas y asistencia */
 .input-group .form-control.note-input {
-  border-right: none;
+  border-right: none !important;
 }
 
 .input-group .btn-outline-danger {
-  border-left: none;
-  border-color: #ced4da;
+  border-left: none !important;
+  border-color: #ced4da !important;
 }
 
 .input-group .btn-outline-danger:hover {
-  background-color: #dc3545;
-  border-color: #dc3545;
+  background-color: #dc3545 !important;
+  border-color: #dc3545 !important;
+  color: white !important;
+}
+
+/* Estilos para el tema oscuro */
+.dark-theme {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .table {
+  color: #ffffff !important;
+  background-color: #2d3748 !important;
+}
+
+.dark-theme .table-dark {
+  background-color: #4a5568 !important;
+}
+
+.dark-theme .modal-content {
+  background-color: #2d3748 !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .form-control {
+  background-color: #4a5568 !important;
+  border-color: #718096 !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .form-control:focus {
+  background-color: #4a5568 !important;
+  border-color: #4299e1 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 0.2rem rgba(66, 153, 225, 0.25) !important;
+}
+
+.dark-theme .form-select {
+  background-color: #4a5568 !important;
+  border-color: #718096 !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .card {
+  background-color: #2d3748 !important;
+  border-color: #4a5568 !important;
+}
+
+.dark-theme .bg-light {
+  background-color: #4a5568 !important;
+  color: #ffffff !important;
+}
+
+/* Mejoras visuales */
+.sheet-delete {
+  cursor: pointer !important;
+  opacity: 0.7 !important;
+  transition: opacity 0.2s !important;
+}
+
+.sheet-delete:hover {
+  opacity: 1 !important;
+}
+
+.nav-tabs .nav-link.active {
+  font-weight: bold !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .d-flex.justify-content-between.align-items-center {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  .form-control.w-25 {
+    width: 100% !important;
+  }
+
+  .table-responsive {
+    font-size: 0.875rem !important;
+  }
+
+  /* Ajustes responsive para la tabla */
+  .table-container {
+    min-height: 150px !important;
+  }
+
+  /* Ajustes para el header en móviles */
+  header {
+    padding: 10px 15px !important;
+    min-height: 50px !important;
+  }
+
+  header h2 {
+    font-size: 1.2rem !important;
+  }
+
+  /* Ajustes para los botones en móviles */
+  .btn-sm {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.775rem !important;
+  }
+}
+
+/* Animaciones */
+.fade-in {
+  animation: fadeIn 0.5s ease-in !important;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

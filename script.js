@@ -1,10 +1,32 @@
-let students = JSON.parse(localStorage.getItem("students")) || {};
-let sheets = JSON.parse(localStorage.getItem("sheets")) || [];
-let currentSheet = sheets[0] || "";
+// ===== CONFIGURACIÓN FIREBASE =====
+const auth = firebase.auth();
+const db = firebase.firestore();
 
+// ===== VARIABLES GLOBALES =====
+let students = {};
+let sheets = [];
+let currentSheet = "";
+let classDays = [];
+let editingStudentIndex = -1;
+let currentUser = null;
+
+// ===== REFERENCIAS DEL DOM =====
+const loginContainer = document.getElementById("login-container");
+const app = document.getElementById("app");
+const loginForm = document.getElementById("login-form");
+const registerBtn = document.getElementById("register-btn");
+const googleLoginBtn = document.getElementById("google-login-btn");
+const logoutBtn = document.getElementById("logout-btn");
+const registerContainer = document.getElementById("register-container");
+const registerForm = document.getElementById("register-form");
+const backToLogin = document.getElementById("back-to-login");
+const userInfo = document.getElementById("user-info");
+
+// Referencias de la aplicación
 const tableBody = document.querySelector("#studentsTable tbody");
 const globalAvgEl = document.getElementById("globalAvg");
 const globalAbsenceEl = document.getElementById("globalAbsence");
+const totalClassDaysEl = document.getElementById("totalClassDays");
 const searchBox = document.getElementById("searchBox");
 const sheetsTabs = document.getElementById("sheetsTabs");
 const studentSelect = document.getElementById("studentSelect");
@@ -17,18 +39,316 @@ const attendanceBtn = document.querySelector(
 );
 const actionButtons = [studentBtn, noteBtn, attendanceBtn];
 
-// ===== Variables para edición =====
-let editingStudentIndex = -1;
+// ===== AUTENTICACIÓN =====
 
-// ===== Inicialización =====
-function init() {
-  if (currentSheet && !students[currentSheet]) students[currentSheet] = [];
+// Observador de estado de autenticación - SOLUCIÓN DEFINITIVA
+auth.onAuthStateChanged(async (user) => {
+  console.log(
+    "Estado de autenticación cambiado:",
+    user ? "Usuario logueado" : "Usuario no logueado"
+  );
+
+  if (user) {
+    currentUser = user;
+    userInfo.textContent = `Hola, ${user.displayName || user.email}`;
+
+    // SOLUCIÓN: Usar solo clases de Bootstrap
+    loginContainer.classList.add("d-none");
+    loginContainer.classList.remove("d-flex");
+    app.classList.remove("d-none");
+    app.classList.add("d-block");
+
+    console.log("Ocultando login, mostrando app");
+
+    // Cargar datos del usuario desde Firestore
+    await loadUserData();
+    initApp();
+  } else {
+    currentUser = null;
+
+    // SOLUCIÓN: Usar solo clases de Bootstrap
+    loginContainer.classList.remove("d-none");
+    loginContainer.classList.add("d-flex");
+    app.classList.add("d-none");
+    app.classList.remove("d-block");
+
+    console.log("Mostrando login, ocultando app");
+
+    // Limpiar datos al cerrar sesión
+    resetAppData();
+    resetAuthForms();
+  }
+});
+
+// ===== FUNCIONES DE SEGURIDAD Y AISLAMIENTO =====
+
+// Limpiar todos los datos de la aplicación al cerrar sesión
+function resetAppData() {
+  students = {};
+  sheets = [];
+  currentSheet = "";
+  classDays = [];
+  editingStudentIndex = -1;
+
+  // Limpiar la interfaz
+  tableBody.innerHTML = "";
+  sheetsTabs.innerHTML = "";
+  studentSelect.innerHTML = "";
+  globalAvgEl.textContent = "0";
+  globalAbsenceEl.textContent = "0%";
+  totalClassDaysEl.textContent = "0";
+}
+
+// ===== FUNCIONES DE AUTENTICACIÓN =====
+
+// Iniciar sesión con correo y contraseña
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = document.getElementById("login-email").value;
+  const password = document.getElementById("login-password").value;
+
+  setLoading("login", true);
+
+  try {
+    await auth.signInWithEmailAndPassword(email, password);
+    showAuthAlert("Inicio de sesión exitoso", "success");
+  } catch (error) {
+    console.error("Error al iniciar sesión:", error);
+    showAuthAlert(getAuthErrorMessage(error), "danger");
+  } finally {
+    setLoading("login", false);
+  }
+});
+
+// Registrarse con correo y contraseña
+registerBtn.addEventListener("click", () => {
+  loginForm.classList.add("d-none");
+  registerContainer.classList.remove("d-none");
+});
+
+backToLogin.addEventListener("click", () => {
+  registerContainer.classList.add("d-none");
+  loginForm.classList.remove("d-none");
+});
+
+registerForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = document.getElementById("register-name").value;
+  const email = document.getElementById("register-email").value;
+  const password = document.getElementById("register-password").value;
+  const confirmPassword = document.getElementById("confirm-password").value;
+
+  if (password !== confirmPassword) {
+    showAuthAlert("Las contraseñas no coinciden", "danger");
+    return;
+  }
+
+  if (password.length < 6) {
+    showAuthAlert("La contraseña debe tener al menos 6 caracteres", "danger");
+    return;
+  }
+
+  setLoading("register", true);
+
+  try {
+    const userCredential = await auth.createUserWithEmailAndPassword(
+      email,
+      password
+    );
+    await userCredential.user.updateProfile({
+      displayName: name,
+    });
+
+    // Crear estructura inicial de datos para el nuevo usuario
+    await initializeUserData();
+    showAuthAlert("Cuenta creada exitosamente", "success");
+  } catch (error) {
+    console.error("Error al registrarse:", error);
+    showAuthAlert(getAuthErrorMessage(error), "danger");
+  } finally {
+    setLoading("register", false);
+  }
+});
+
+// Iniciar sesión con Google
+googleLoginBtn.addEventListener("click", async () => {
+  const provider = new firebase.auth.GoogleAuthProvider();
+
+  try {
+    const result = await auth.signInWithPopup(provider);
+    // Verificar si es un usuario nuevo
+    if (result.additionalUserInfo.isNewUser) {
+      await initializeUserData();
+    }
+    showAuthAlert("Inicio de sesión con Google exitoso", "success");
+  } catch (error) {
+    console.error("Error al iniciar sesión con Google:", error);
+    showAuthAlert(getAuthErrorMessage(error), "danger");
+  }
+});
+
+// Cerrar sesión
+logoutBtn.addEventListener("click", () => {
+  auth.signOut();
+});
+
+function setLoading(type, isLoading) {
+  const submitBtn = document.getElementById(`${type}-submit-btn`);
+  const text = document.getElementById(`${type}-text`);
+  const spinner = document.getElementById(`${type}-spinner`);
+
+  if (isLoading) {
+    text.classList.add("d-none");
+    spinner.classList.remove("d-none");
+    submitBtn.disabled = true;
+  } else {
+    text.classList.remove("d-none");
+    spinner.classList.add("d-none");
+    submitBtn.disabled = false;
+  }
+}
+
+function showAuthAlert(message, type) {
+  const alertContainer = document.getElementById("auth-alerts");
+  const alertDiv = document.createElement("div");
+  alertDiv.className = `alert alert-${type} alert-dismissible fade show mt-3`;
+  alertDiv.innerHTML = `
+    ${message}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  `;
+  alertContainer.innerHTML = "";
+  alertContainer.appendChild(alertDiv);
+}
+
+function getAuthErrorMessage(error) {
+  switch (error.code) {
+    case "auth/user-not-found":
+      return "Usuario no encontrado";
+    case "auth/wrong-password":
+      return "Contraseña incorrecta";
+    case "auth/email-already-in-use":
+      return "El correo ya está en uso";
+    case "auth/weak-password":
+      return "La contraseña es demasiado débil";
+    case "auth/invalid-email":
+      return "Correo electrónico inválido";
+    default:
+      return error.message;
+  }
+}
+
+function resetAuthForms() {
+  loginForm.reset();
+  registerForm.reset();
+  document.getElementById("auth-alerts").innerHTML = "";
+  registerContainer.classList.add("d-none");
+  loginForm.classList.remove("d-none");
+}
+
+// ===== FIRESTORE DATABASE - CORREGIDO PARA AISLAMIENTO DE USUARIOS =====
+
+// Inicializar datos para un nuevo usuario
+async function initializeUserData() {
+  if (!currentUser) return;
+
+  const initialData = {
+    students: {},
+    sheets: [],
+    classDays: [],
+    userEmail: currentUser.email,
+    userName: currentUser.displayName,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+  };
+
+  try {
+    await db.collection("users").doc(currentUser.uid).set(initialData);
+    // Cargar los datos iniciales en las variables globales
+    students = initialData.students;
+    sheets = initialData.sheets;
+    classDays = initialData.classDays;
+    currentSheet = "";
+  } catch (error) {
+    console.error("Error inicializando datos:", error);
+    throw error;
+  }
+}
+
+// Cargar datos del usuario actual
+async function loadUserData() {
+  if (!currentUser) return;
+
+  try {
+    const userDoc = await db.collection("users").doc(currentUser.uid).get();
+
+    if (userDoc.exists) {
+      const data = userDoc.data();
+      console.log("Datos cargados para usuario:", currentUser.uid, data);
+
+      // Asegurarnos de que cada usuario solo vea sus datos
+      students = data.students || {};
+      sheets = data.sheets || [];
+      classDays = data.classDays || [];
+      currentSheet = sheets[0] || "";
+    } else {
+      // Crear documento inicial para el usuario
+      console.log(
+        "Creando datos iniciales para nuevo usuario:",
+        currentUser.uid
+      );
+      await initializeUserData();
+    }
+  } catch (error) {
+    console.error("Error cargando datos:", error);
+    // En caso de error, inicializar datos vacíos
+    students = {};
+    sheets = [];
+    classDays = [];
+    currentSheet = "";
+  }
+}
+
+// Guardar datos del usuario actual
+async function saveUserData() {
+  if (!currentUser) {
+    console.error("No hay usuario autenticado para guardar datos");
+    return;
+  }
+
+  try {
+    const userData = {
+      students,
+      sheets,
+      classDays,
+      lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+      userEmail: currentUser.email,
+      userName: currentUser.displayName,
+    };
+
+    console.log("Guardando datos para usuario:", currentUser.uid, userData);
+
+    await db
+      .collection("users")
+      .doc(currentUser.uid)
+      .set(userData, { merge: true });
+  } catch (error) {
+    console.error("Error guardando datos:", error);
+    throw error;
+  }
+}
+
+// ===== APLICACIÓN PRINCIPAL =====
+
+function initApp() {
+  if (currentSheet && !students[currentSheet]) {
+    students[currentSheet] = [];
+  }
   renderSheets();
   renderStudents();
   updateButtonsState();
 }
 
-// ===== Render de pestañas =====
+// ===== RENDER DE PESTAÑAS =====
 function renderSheets() {
   sheetsTabs.innerHTML = "";
   sheets.forEach((sheet) => {
@@ -48,11 +368,10 @@ function renderSheets() {
     sheetsTabs.appendChild(li);
   });
 
-  // Actualizar estado de botones después de renderizar pestañas
   updateButtonsState();
 }
 
-// ===== Gestión de botones =====
+// ===== GESTIÓN DE BOTONES =====
 function updateButtonsState() {
   const hasSheet = !!currentSheet;
 
@@ -63,7 +382,6 @@ function updateButtonsState() {
 
     if (hasSheet) {
       btn.classList.remove("btn-secondary");
-      // Restaurar clase original
       if (btn === studentBtn) btn.classList.add("btn-primary");
       if (btn === noteBtn) btn.classList.add("btn-success");
       if (btn === attendanceBtn) btn.classList.add("btn-warning");
@@ -76,17 +394,17 @@ function updateButtonsState() {
   });
 }
 
-// ===== Cambiar hoja =====
+// ===== CAMBIAR HOJA =====
 function changeSheet(sheet) {
   currentSheet = sheet;
   if (!students[currentSheet]) students[currentSheet] = [];
   renderSheets();
   renderStudents();
-  updateButtonsState(); // ✅ Actualizar botones inmediatamente
+  updateButtonsState();
 }
 
-// ===== Eliminar hoja =====
-function deleteSheet(sheetName) {
+// ===== ELIMINAR HOJA =====
+async function deleteSheet(sheetName) {
   if (
     !confirm(
       `¿Estás seguro de eliminar la hoja "${sheetName}" y todos sus datos?`
@@ -97,42 +415,91 @@ function deleteSheet(sheetName) {
   sheets = sheets.filter((s) => s !== sheetName);
   delete students[sheetName];
 
-  currentSheet = sheets[0] || ""; // Puede quedar vacío si era la última
+  currentSheet = sheets[0] || "";
 
-  localStorage.setItem("sheets", JSON.stringify(sheets));
-  localStorage.setItem("students", JSON.stringify(students));
-
-  renderSheets();
-  renderStudents(searchBox.value);
-  updateButtonsState(); // ✅ Actualizar botones inmediatamente después de eliminar
+  try {
+    await saveUserData();
+    renderSheets();
+    renderStudents(searchBox.value);
+    updateButtonsState();
+  } catch (error) {
+    console.error("Error eliminando hoja:", error);
+    alert("Error al eliminar la hoja");
+  }
 }
 
-// ===== Render de estudiantes =====
+// ===== CALCULAR DÍAS DE CLASE =====
+function calculateClassDays() {
+  const allDates = new Set();
+  Object.values(students).forEach((sheetStudents) => {
+    sheetStudents.forEach((student) => {
+      Object.keys(student.asistencia || {}).forEach((date) => {
+        allDates.add(date);
+      });
+    });
+  });
+  classDays = Array.from(allDates).sort();
+  return classDays;
+}
+
+// ===== RENDER DE ESTUDIANTES =====
 function renderStudents(filter = "") {
   tableBody.innerHTML = "";
 
   if (!currentSheet) {
-    tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">📄 No hay hoja seleccionada</td></tr>`;
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="7" class="text-center py-5">
+          <div class="empty-state">
+            <div>
+              <h3 class="text-muted">📄 No hay hoja seleccionada</h3>
+              <p class="text-muted">Crea una nueva hoja para comenzar</p>
+              <button class="btn btn-primary" onclick="document.getElementById('newSheet').click()">
+                <i class="fas fa-plus"></i> Crear Primera Hoja
+              </button>
+            </div>
+          </div>
+        </td>
+      </tr>`;
     globalAvgEl.textContent = "0";
     globalAbsenceEl.textContent = "0%";
+    totalClassDaysEl.textContent = "0";
     updateStudentSelect();
     updateButtonsState();
     return;
   }
 
   const alumnos = students[currentSheet] || [];
+
+  if (alumnos.length === 0) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="7" class="text-center py-5">
+          <div class="empty-state">
+            <div>
+              <h3 class="text-muted">👥 No hay estudiantes</h3>
+              <p class="text-muted">Añade estudiantes a esta hoja</p>
+              <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#studentModal">
+                <i class="fas fa-plus"></i> Añadir Primer Estudiante
+              </button>
+            </div>
+          </div>
+        </td>
+      </tr>`;
+    globalAvgEl.textContent = "0";
+    globalAbsenceEl.textContent = "0%";
+    totalClassDaysEl.textContent = "0";
+    updateStudentSelect();
+    updateButtonsState();
+    return;
+  }
+
   let totalNotas = 0,
     totalAlumnos = 0,
     totalFaltasNoJustificadas = 0;
 
-  // Calcular el total de días de clase (todas las fechas únicas de asistencia)
-  const diasClase = new Set();
-  alumnos.forEach((alumno) => {
-    Object.keys(alumno.asistencia || {}).forEach((fecha) => {
-      diasClase.add(fecha);
-    });
-  });
-  const totalDiasClase = diasClase.size;
+  const classDays = calculateClassDays();
+  const totalDiasClase = classDays.length;
 
   alumnos
     .filter((st) => st.nombre.toLowerCase().includes(filter.toLowerCase()))
@@ -148,42 +515,52 @@ function renderStudents(filter = "") {
       totalNotas += parseFloat(media);
       totalAlumnos++;
 
-      // Calcular faltas no justificadas para este alumno
       const asistencia = st.asistencia || {};
-      const faltasNoJustificadas = Object.values(asistencia).filter(
-        (tipo) => tipo === "falta"
+      const faltas = Object.values(asistencia).filter(
+        (a) => a === "falta"
       ).length;
-      totalFaltasNoJustificadas += faltasNoJustificadas;
+      const faltasJustificadas = Object.values(asistencia).filter(
+        (a) => a === "falta-justificada"
+      ).length;
+      const retrasos = Object.values(asistencia).filter(
+        (a) => a === "retraso"
+      ).length;
 
-      // Porcentaje de faltas para el alumno
+      totalFaltasNoJustificadas += faltas;
+
       const porcentajeFaltasAlumno =
-        totalDiasClase > 0
-          ? ((faltasNoJustificadas / totalDiasClase) * 100).toFixed(1)
-          : 0;
+        totalDiasClase > 0 ? ((faltas / totalDiasClase) * 100).toFixed(1) : 0;
 
       const tr = document.createElement("tr");
       tr.className = trClass;
       tr.innerHTML = `
         <td>${st.nombre}</td>
-        <td>${st.notas.join(", ")}</td>
-        <td>${media}</td>
-        <td>${faltasNoJustificadas} (${porcentajeFaltasAlumno}%)</td>
-        <td>${
-          Object.values(asistencia).filter((tipo) => tipo === "retraso").length
-        }</td>
+        <td>${st.notas.join(", ") || "Sin notas"}</td>
+        <td><strong>${media}</strong></td>
+        <td>${faltas} ${
+        faltasJustificadas > 0 ? `(${faltasJustificadas} just.)` : ""
+      }</td>
+        <td>${retrasos}</td>
+        <td><span class="badge ${
+          porcentajeFaltasAlumno > 20 ? "bg-danger" : "bg-warning"
+        }">${porcentajeFaltasAlumno}%</span></td>
         <td>
-          <button class="btn btn-sm btn-primary me-1" onclick="editStudent(${idx})">✏️</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteStudent(${idx})">🗑</button>
+          <button class="btn btn-sm btn-primary me-1" onclick="editStudent(${idx})" title="Editar">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn btn-sm btn-danger" onclick="deleteStudent(${idx})" title="Eliminar">
+            <i class="fas fa-trash"></i>
+          </button>
         </td>
       `;
       tableBody.appendChild(tr);
     });
 
+  // Estadísticas globales
   globalAvgEl.textContent = totalAlumnos
     ? (totalNotas / totalAlumnos).toFixed(2)
     : "0";
 
-  // Porcentaje global de faltas
   const porcentajeFaltasGlobal =
     totalAlumnos && totalDiasClase
       ? (
@@ -192,15 +569,23 @@ function renderStudents(filter = "") {
         ).toFixed(1)
       : 0;
   globalAbsenceEl.textContent = `${porcentajeFaltasGlobal}%`;
+  totalClassDaysEl.textContent = totalDiasClase;
 
-  localStorage.setItem("students", JSON.stringify(students));
   updateStudentSelect();
 }
 
-// ===== Actualizar select de estudiantes =====
+// ===== ACTUALIZAR SELECT DE ESTUDIANTES =====
 function updateStudentSelect() {
   studentSelect.innerHTML = "";
   if (!currentSheet) return;
+
+  const optionDefault = document.createElement("option");
+  optionDefault.textContent = "Selecciona un estudiante";
+  optionDefault.value = "";
+  optionDefault.disabled = true;
+  optionDefault.selected = true;
+  studentSelect.appendChild(optionDefault);
+
   (students[currentSheet] || []).forEach((st, idx) => {
     const opt = document.createElement("option");
     opt.value = idx;
@@ -209,64 +594,103 @@ function updateStudentSelect() {
   });
 }
 
-// ===== Añadir estudiante =====
-document.getElementById("saveStudent").onclick = () => {
+// ===== AÑADIR ESTUDIANTE =====
+document.getElementById("saveStudent").onclick = async () => {
   if (!currentSheet) {
     alert("⚠️ Debes crear o seleccionar una hoja antes de añadir estudiantes.");
     return;
   }
+
   const nombre = document.getElementById("nameInput").value.trim();
   if (nombre) {
-    students[currentSheet].push({ nombre, notas: [], asistencia: {} });
-    renderStudents(searchBox.value);
-    bootstrap.Modal.getInstance(document.getElementById("studentModal")).hide();
-    document.getElementById("nameInput").value = "";
+    students[currentSheet].push({
+      nombre,
+      notas: [],
+      asistencia: {},
+    });
+
+    try {
+      await saveUserData();
+      renderStudents(searchBox.value);
+      bootstrap.Modal.getInstance(
+        document.getElementById("studentModal")
+      ).hide();
+      document.getElementById("nameInput").value = "";
+    } catch (error) {
+      console.error("Error guardando estudiante:", error);
+      alert("Error al guardar el estudiante");
+    }
   }
 };
 
-// ===== Añadir nota =====
-document.getElementById("saveNote").onclick = () => {
+// ===== AÑADIR NOTA =====
+document.getElementById("saveNote").onclick = async () => {
   if (!currentSheet) {
     alert("⚠️ Debes crear o seleccionar una hoja antes de añadir notas.");
     return;
   }
+
   const idx = studentSelect.value;
   const nota = parseFloat(document.getElementById("noteInput").value);
+
   if (idx !== "" && !isNaN(nota) && nota >= 0 && nota <= 10) {
     students[currentSheet][idx].notas.push(nota);
-    renderStudents(searchBox.value);
-    bootstrap.Modal.getInstance(document.getElementById("noteModal")).hide();
-    document.getElementById("noteInput").value = "";
+
+    try {
+      await saveUserData();
+      renderStudents(searchBox.value);
+      bootstrap.Modal.getInstance(document.getElementById("noteModal")).hide();
+      document.getElementById("noteInput").value = "";
+    } catch (error) {
+      console.error("Error guardando nota:", error);
+      alert("Error al guardar la nota");
+    }
   }
 };
 
-// ===== Eliminar estudiante =====
-function deleteStudent(idx) {
+// ===== ELIMINAR ESTUDIANTE =====
+async function deleteStudent(idx) {
   if (!currentSheet) return;
+
+  if (!confirm("¿Estás seguro de eliminar este estudiante?")) return;
+
   students[currentSheet].splice(idx, 1);
-  renderStudents(searchBox.value);
+
+  try {
+    await saveUserData();
+    renderStudents(searchBox.value);
+  } catch (error) {
+    console.error("Error eliminando estudiante:", error);
+    alert("Error al eliminar el estudiante");
+  }
 }
 
-// ===== Buscar =====
+// ===== BUSCAR =====
 searchBox.addEventListener("input", () => renderStudents(searchBox.value));
 
-// ===== Crear nueva hoja =====
-document.getElementById("newSheet").onclick = () => {
+// ===== CREAR NUEVA HOJA =====
+document.getElementById("newSheet").onclick = async () => {
   const name = prompt("Nombre de la nueva hoja:");
   if (name) {
     if (sheets.includes(name)) {
       alert("⚠️ Ya existe una hoja con ese nombre.");
       return;
     }
+
     sheets.push(name);
     students[name] = [];
-    localStorage.setItem("sheets", JSON.stringify(sheets));
-    changeSheet(name);
+
+    try {
+      await saveUserData();
+      changeSheet(name);
+    } catch (error) {
+      console.error("Error creando hoja:", error);
+      alert("Error al crear la hoja");
+    }
   }
 };
 
-// ===== Gestión de Asistencia =====
-// Función para abrir el modal de asistencia
+// ===== GESTIÓN DE ASISTENCIA =====
 attendanceBtn.onclick = () => {
   if (!currentSheet) {
     alert(
@@ -278,45 +702,39 @@ attendanceBtn.onclick = () => {
   const attendanceTableBody = document.querySelector("#attendanceTable tbody");
   attendanceTableBody.innerHTML = "";
 
-  // Establecer la fecha actual por defecto
+  // Establecer fecha actual por defecto
   const today = new Date().toISOString().split("T")[0];
   document.getElementById("attendanceDate").value = today;
 
   (students[currentSheet] || []).forEach((student, index) => {
     const row = document.createElement("tr");
+    const currentDate = document.getElementById("attendanceDate").value;
+    const currentStatus = student.asistencia?.[currentDate] || "";
+
     row.innerHTML = `
       <td>${student.nombre}</td>
       <td>
-        <input type="checkbox" class="attendance-falta" data-index="${index}">
+        <input type="radio" name="attendance-${index}" value="asistio" 
+               ${currentStatus === "" ? "checked" : ""} 
+               class="attendance-option" data-index="${index}">
       </td>
       <td>
-        <input type="checkbox" class="attendance-retraso" data-index="${index}">
+        <input type="radio" name="attendance-${index}" value="falta"
+               ${currentStatus === "falta" ? "checked" : ""}
+               class="attendance-option" data-index="${index}">
+      </td>
+      <td>
+        <input type="radio" name="attendance-${index}" value="retraso"
+               ${currentStatus === "retraso" ? "checked" : ""}
+               class="attendance-option" data-index="${index}">
       </td>
     `;
     attendanceTableBody.appendChild(row);
-
-    // Obtener los checkboxes de esta fila
-    const faltaCheckbox = row.querySelector(".attendance-falta");
-    const retrasoCheckbox = row.querySelector(".attendance-retraso");
-
-    // Evento para falta: si se marca, desmarcar retraso
-    faltaCheckbox.addEventListener("change", function () {
-      if (this.checked) {
-        retrasoCheckbox.checked = false;
-      }
-    });
-
-    // Evento para retraso: si se marca, desmarcar falta
-    retrasoCheckbox.addEventListener("change", function () {
-      if (this.checked) {
-        faltaCheckbox.checked = false;
-      }
-    });
   });
 };
 
 // Guardar asistencia
-document.getElementById("saveAttendance").onclick = () => {
+document.getElementById("saveAttendance").onclick = async () => {
   if (!currentSheet) return;
 
   const fecha = document.getElementById("attendanceDate").value;
@@ -325,52 +743,47 @@ document.getElementById("saveAttendance").onclick = () => {
     return;
   }
 
-  document.querySelectorAll(".attendance-falta").forEach((checkbox) => {
-    const index = checkbox.getAttribute("data-index");
-    if (checkbox.checked) {
-      students[currentSheet][index].asistencia[fecha] = "falta";
-    }
-  });
+  // Registrar el día de clase si no existe
+  if (!classDays.includes(fecha)) {
+    classDays.push(fecha);
+  }
 
-  document.querySelectorAll(".attendance-retraso").forEach((checkbox) => {
-    const index = checkbox.getAttribute("data-index");
-    if (checkbox.checked) {
-      students[currentSheet][index].asistencia[fecha] = "retraso";
-    }
-  });
+  document.querySelectorAll(".attendance-option").forEach((radio) => {
+    if (radio.checked) {
+      const index = radio.getAttribute("data-index");
+      const status = radio.value;
 
-  // Recorremos todos los alumnos y si no están marcados ni falta ni retraso, eliminamos la asistencia de esa fecha.
-  (students[currentSheet] || []).forEach((student, index) => {
-    const faltaCheckbox = document.querySelector(
-      `.attendance-falta[data-index="${index}"]`
-    );
-    const retrasoCheckbox = document.querySelector(
-      `.attendance-retraso[data-index="${index}"]`
-    );
+      if (!students[currentSheet][index].asistencia) {
+        students[currentSheet][index].asistencia = {};
+      }
 
-    if (!faltaCheckbox.checked && !retrasoCheckbox.checked) {
-      // Si no hay marca, quitamos la asistencia de ese día (si existía)
-      if (student.asistencia && student.asistencia[fecha]) {
-        delete student.asistencia[fecha];
+      if (status === "asistio") {
+        delete students[currentSheet][index].asistencia[fecha];
+      } else {
+        students[currentSheet][index].asistencia[fecha] = status;
       }
     }
   });
 
-  localStorage.setItem("students", JSON.stringify(students));
-  renderStudents(searchBox.value);
-  bootstrap.Modal.getInstance(
-    document.getElementById("attendanceModal")
-  ).hide();
+  try {
+    await saveUserData();
+    renderStudents(searchBox.value);
+    bootstrap.Modal.getInstance(
+      document.getElementById("attendanceModal")
+    ).hide();
+  } catch (error) {
+    console.error("Error guardando asistencia:", error);
+    alert("Error al guardar la asistencia");
+  }
 };
 
-// ===== Funciones de Edición de Estudiantes =====
+// ===== FUNCIONES DE EDICIÓN DE ESTUDIANTES =====
 function editStudent(index) {
   if (!currentSheet) return;
 
   editingStudentIndex = index;
   const student = students[currentSheet][index];
 
-  // Llenar el formulario con los datos actuales
   document.getElementById("editStudentName").value = student.nombre;
 
   // Llenar notas
@@ -385,57 +798,21 @@ function editStudent(index) {
     "editAttendanceContainer"
   );
   attendanceContainer.innerHTML = "";
-  const asistencia = student.asistencia || {};
-  Object.keys(asistencia).forEach((fecha) => {
-    addAttendanceField(fecha, asistencia[fecha]);
+
+  const classDays = calculateClassDays();
+  classDays.forEach((fecha) => {
+    const status = student.asistencia?.[fecha] || "asistio";
+    addAttendanceField(fecha, status);
   });
 
-  // Mostrar modal
   const editModal = new bootstrap.Modal(
     document.getElementById("editStudentModal")
   );
   editModal.show();
 }
 
-function addAttendanceField(fecha = "", tipo = "") {
-  const container = document.getElementById("editAttendanceContainer");
-  const attendanceId = Date.now(); // ID único para esta fila
-
-  const attendanceDiv = document.createElement("div");
-  attendanceDiv.className = "input-group mb-2";
-  attendanceDiv.innerHTML = `
-    <input type="date" class="form-control attendance-date" value="${fecha}">
-    <select class="form-select attendance-type">
-      <option value="">Presente</option>
-      <option value="falta" ${tipo === "falta" ? "selected" : ""}>Falta</option>
-      <option value="retraso" ${
-        tipo === "retraso" ? "selected" : ""
-      }>Retraso</option>
-      <option value="justificada" ${
-        tipo === "justificada" ? "selected" : ""
-      }>Falta Justificada</option>
-    </select>
-    <button class="btn btn-outline-danger" type="button" onclick="removeAttendanceField(this)">
-      🗑
-    </button>
-  `;
-  container.appendChild(attendanceDiv);
-}
-
-function removeAttendanceField(button) {
-  button.parentElement.remove();
-}
-
-// ===== Función para añadir campo de nota =====
 function addNoteField(value = "", index = null) {
   const container = document.getElementById("editNotesContainer");
-  if (!container) {
-    console.error(
-      'No se encontró el contenedor de notas con id "editNotesContainer"'
-    );
-    return;
-  }
-
   const noteId = index !== null ? index : Date.now();
 
   const noteDiv = document.createElement("div");
@@ -445,19 +822,60 @@ function addNoteField(value = "", index = null) {
            value="${value}" step="0.01" min="0" max="10" 
            placeholder="Nota (0-10)" data-index="${noteId}">
     <button class="btn btn-outline-danger" type="button" onclick="removeNoteField(this)">
-      🗑
+      <i class="fas fa-trash"></i>
     </button>
   `;
   container.appendChild(noteDiv);
 }
 
-// ===== Función para eliminar campo de nota =====
 function removeNoteField(button) {
   button.parentElement.remove();
 }
 
-// ===== Guardar cambios del estudiante =====
-document.getElementById("saveEditStudent").onclick = () => {
+function addAttendanceField(fecha, status = "asistio") {
+  const container = document.getElementById("editAttendanceContainer");
+
+  const attendanceDiv = document.createElement("div");
+  attendanceDiv.className = "row mb-2 align-items-center";
+  attendanceDiv.innerHTML = `
+    <div class="col-md-4">
+      <label class="form-label">${fecha}</label>
+    </div>
+    <div class="col-md-6">
+      <select class="form-select attendance-status" data-date="${fecha}">
+        <option value="asistio" ${
+          status === "asistio" ? "selected" : ""
+        }>Asistió</option>
+        <option value="falta" ${
+          status === "falta" ? "selected" : ""
+        }>Falta</option>
+        <option value="falta-justificada" ${
+          status === "falta-justificada" ? "selected" : ""
+        }>Falta Justificada</option>
+        <option value="retraso" ${
+          status === "retraso" ? "selected" : ""
+        }>Retraso</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button class="btn btn-outline-danger btn-sm" type="button" onclick="removeAttendanceField('${fecha}')">
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>
+  `;
+  container.appendChild(attendanceDiv);
+}
+
+function removeAttendanceField(fecha) {
+  const student = students[currentSheet][editingStudentIndex];
+  if (student.asistencia && student.asistencia[fecha]) {
+    delete student.asistencia[fecha];
+  }
+  // Volver a renderizar el modal para reflejar el cambio
+  editStudent(editingStudentIndex);
+}
+
+document.getElementById("saveEditStudent").onclick = async () => {
   if (!currentSheet || editingStudentIndex === -1) return;
 
   const student = students[currentSheet][editingStudentIndex];
@@ -480,110 +898,40 @@ document.getElementById("saveEditStudent").onclick = () => {
   });
 
   // Actualizar asistencia
-  student.asistencia = {};
-  document.querySelectorAll(".attendance-date").forEach((dateInput, index) => {
-    const fecha = dateInput.value;
-    const tipo = document.querySelectorAll(".attendance-type")[index].value;
-    if (fecha && tipo) {
-      student.asistencia[fecha] = tipo;
+  document.querySelectorAll(".attendance-status").forEach((select) => {
+    const fecha = select.getAttribute("data-date");
+    const status = select.value;
+
+    if (!student.asistencia) {
+      student.asistencia = {};
+    }
+
+    if (status === "asistio") {
+      delete student.asistencia[fecha];
+    } else {
+      student.asistencia[fecha] = status;
     }
   });
 
-  // Guardar y actualizar
-  localStorage.setItem("students", JSON.stringify(students));
-  renderStudents(searchBox.value);
-
-  // Cerrar modal
-  bootstrap.Modal.getInstance(
-    document.getElementById("editStudentModal")
-  ).hide();
-  editingStudentIndex = -1;
+  try {
+    await saveUserData();
+    renderStudents(searchBox.value);
+    bootstrap.Modal.getInstance(
+      document.getElementById("editStudentModal")
+    ).hide();
+    editingStudentIndex = -1;
+  } catch (error) {
+    console.error("Error guardando cambios:", error);
+    alert("Error al guardar los cambios");
+  }
 };
 
-// ===== Función para actualizar asistencia =====
-function updateStudentAttendance(student) {
-  const nuevasFaltas =
-    parseInt(document.getElementById("editFaltas").value) || 0;
-  const nuevosRetrasos =
-    parseInt(document.getElementById("editRetrasos").value) || 0;
-
-  // Obtener asistencia actual
-  const asistenciaActual = student.asistencia || {};
-  const fechasExistentes = Object.keys(asistenciaActual);
-
-  // Contar faltas y retrasos actuales
-  const faltasActuales = fechasExistentes.filter(
-    (f) => asistenciaActual[f] === "falta"
-  ).length;
-  const retrasosActuales = fechasExistentes.filter(
-    (f) => asistenciaActual[f] === "retraso"
-  ).length;
-
-  // Calcular diferencia
-  const diffFaltas = nuevasFaltas - faltasActuales;
-  const diffRetrasos = nuevosRetrasos - retrasosActuales;
-
-  // Actualizar faltas
-  if (diffFaltas > 0) {
-    // Añadir faltas
-    for (let i = 0; i < diffFaltas; i++) {
-      const fecha = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0];
-      asistenciaActual[fecha] = "falta";
-    }
-  } else if (diffFaltas < 0) {
-    // Eliminar faltas
-    let eliminadas = 0;
-    for (const fecha in asistenciaActual) {
-      if (
-        asistenciaActual[fecha] === "falta" &&
-        eliminadas < Math.abs(diffFaltas)
-      ) {
-        delete asistenciaActual[fecha];
-        eliminadas++;
-      }
-    }
-  }
-
-  // Actualizar retrasos
-  if (diffRetrasos > 0) {
-    // Añadir retrasos
-    for (let i = 0; i < diffRetrasos; i++) {
-      const fecha = new Date(
-        Date.now() - (i + diffFaltas) * 24 * 60 * 60 * 1000
-      )
-        .toISOString()
-        .split("T")[0];
-      asistenciaActual[fecha] = "retraso";
-    }
-  } else if (diffRetrasos < 0) {
-    // Eliminar retrasos
-    let eliminados = 0;
-    for (const fecha in asistenciaActual) {
-      if (
-        asistenciaActual[fecha] === "retraso" &&
-        eliminados < Math.abs(diffRetrasos)
-      ) {
-        delete asistenciaActual[fecha];
-        eliminados++;
-      }
-    }
-  }
-
-  student.asistencia = asistenciaActual;
-}
-
-// ===== Tema oscuro/claro =====
+// ===== TEMA OSCURO/CLARO =====
 document.getElementById("themeToggle").onclick = () => {
   document.body.classList.toggle("dark-theme");
-  // Guardar preferencia en localStorage si lo deseas
 };
 
-// ===== Internacionalización =====
+// ===== INTERNACIONALIZACIÓN =====
 document.getElementById("langToggle").onclick = () => {
-  // Aquí puedes implementar la lógica de cambio de idioma
   alert("Funcionalidad de cambio de idioma por implementar");
 };
-
-init();
