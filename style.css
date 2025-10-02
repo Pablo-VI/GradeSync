@@ -1,0 +1,58 @@
+body {
+  background-color: #f8f9fa;
+}
+
+.table-container {
+  max-height: 400px;
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+}
+
+.table-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+/* Colores semáforo */
+.tr-rojo {
+  background-color: #f8d7da !important;
+}
+.tr-amarillo {
+  background-color: #fff3cd !important;
+}
+.tr-verde {
+  background-color: #d4edda !important;
+}
+
+/* Sticky header */
+thead.sticky-top th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+/* Estilos para los campos de edición */
+.note-field,
+.attendance-field {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.note-field input,
+.attendance-field input,
+.attendance-field select {
+  margin-right: 0.5rem;
+}
+.input-group .form-control.note-input {
+  border-right: none;
+}
+
+.input-group .btn-outline-danger {
+  border-left: none;
+  border-color: #ced4da;
+}
+
+.input-group .btn-outline-danger:hover {
+  background-color: #dc3545;
+  border-color: #dc3545;
+}
