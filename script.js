@@ -6,7 +6,7 @@ const db = firebase.firestore();
 let students = {};
 let sheets = [];
 let currentSheet = "";
-let classDays = [];
+let classDays = []; // Array para almacenar todos los días con asistencia registrada
 let editingStudentIndex = -1;
 let currentUser = null;
 
@@ -41,7 +41,7 @@ const actionButtons = [studentBtn, noteBtn, attendanceBtn];
 
 // ===== AUTENTICACIÓN =====
 
-// Observador de estado de autenticación - SOLUCIÓN DEFINITIVA
+// Observador de estado de autenticación - VERSIÓN CORREGIDA
 auth.onAuthStateChanged(async (user) => {
   console.log(
     "Estado de autenticación cambiado:",
@@ -52,9 +52,8 @@ auth.onAuthStateChanged(async (user) => {
     currentUser = user;
     userInfo.textContent = `Hola, ${user.displayName || user.email}`;
 
-    // SOLUCIÓN: Usar solo clases de Bootstrap
+    // ✅ Ocultar login y mostrar app usando clases
     loginContainer.classList.add("d-none");
-    loginContainer.classList.remove("d-flex");
     app.classList.remove("d-none");
     app.classList.add("d-block");
 
@@ -66,9 +65,8 @@ auth.onAuthStateChanged(async (user) => {
   } else {
     currentUser = null;
 
-    // SOLUCIÓN: Usar solo clases de Bootstrap
+    // ✅ Mostrar login y ocultar app usando clases
     loginContainer.classList.remove("d-none");
-    loginContainer.classList.add("d-flex");
     app.classList.add("d-none");
     app.classList.remove("d-block");
 
@@ -438,8 +436,7 @@ function calculateClassDays() {
       });
     });
   });
-  classDays = Array.from(allDates).sort();
-  return classDays;
+  return Array.from(allDates).sort();
 }
 
 // ===== RENDER DE ESTUDIANTES =====
@@ -498,24 +495,38 @@ function renderStudents(filter = "") {
     totalAlumnos = 0,
     totalFaltasNoJustificadas = 0;
 
+  // Calcular días de clase (todas las fechas únicas de asistencia)
   const classDays = calculateClassDays();
   const totalDiasClase = classDays.length;
 
   alumnos
     .filter((st) => st.nombre.toLowerCase().includes(filter.toLowerCase()))
     .forEach((st, idx) => {
-      const media =
-        st.notas.length > 0
-          ? (st.notas.reduce((a, b) => a + b, 0) / st.notas.length).toFixed(2)
-          : "0.00";
+      // Calcular media solo si hay notas
+      let media = "";
+      let mediaNum = 0;
+      let trClass = "";
 
-      let trClass =
-        media < 5 ? "tr-rojo" : media < 7 ? "tr-amarillo" : "tr-verde";
+      if (st.notas.length > 0) {
+        mediaNum = st.notas.reduce((a, b) => a + b, 0) / st.notas.length;
+        media = mediaNum.toFixed(2);
 
-      totalNotas += parseFloat(media);
-      totalAlumnos++;
+        // Aplicar semáforo de rendimiento basado en la media
+        if (mediaNum < 5) {
+          trClass = "tr-rojo";
+        } else if (mediaNum < 7) {
+          trClass = "tr-amarillo";
+        } else {
+          trClass = "tr-verde";
+        }
+
+        totalNotas += mediaNum;
+        totalAlumnos++;
+      }
 
       const asistencia = st.asistencia || {};
+
+      // Calcular estadísticas de asistencia
       const faltas = Object.values(asistencia).filter(
         (a) => a === "falta"
       ).length;
@@ -528,15 +539,21 @@ function renderStudents(filter = "") {
 
       totalFaltasNoJustificadas += faltas;
 
+      // Calcular porcentaje de faltas basado en el total de días de clase
       const porcentajeFaltasAlumno =
         totalDiasClase > 0 ? ((faltas / totalDiasClase) * 100).toFixed(1) : 0;
 
       const tr = document.createElement("tr");
-      tr.className = trClass;
+
+      // CORRECCIÓN: Aplicar la clase del semáforo directamente
+      if (trClass) {
+        tr.className = trClass;
+      }
+
       tr.innerHTML = `
         <td>${st.nombre}</td>
         <td>${st.notas.join(", ") || "Sin notas"}</td>
-        <td><strong>${media}</strong></td>
+        <td><strong>${media || "-"}</strong></td>
         <td>${faltas} ${
         faltasJustificadas > 0 ? `(${faltasJustificadas} just.)` : ""
       }</td>
@@ -556,11 +573,13 @@ function renderStudents(filter = "") {
       tableBody.appendChild(tr);
     });
 
-  // Estadísticas globales
-  globalAvgEl.textContent = totalAlumnos
-    ? (totalNotas / totalAlumnos).toFixed(2)
+  // Estadísticas globales - solo contar alumnos con notas para la media global
+  const alumnosConNotas = alumnos.filter((st) => st.notas.length > 0).length;
+  globalAvgEl.textContent = alumnosConNotas
+    ? (totalNotas / alumnosConNotas).toFixed(2)
     : "0";
 
+  // Calcular porcentaje global de faltas basado en el total de días de clase
   const porcentajeFaltasGlobal =
     totalAlumnos && totalDiasClase
       ? (
@@ -690,7 +709,15 @@ document.getElementById("newSheet").onclick = async () => {
   }
 };
 
-// ===== GESTIÓN DE ASISTENCIA =====
+// ===== GESTIÓN DE ASISTENCIA MEJORADA =====
+
+// Función para verificar si ya existe asistencia para una fecha
+function checkExistingAttendance(date) {
+  const classDays = calculateClassDays();
+  return classDays.includes(date);
+}
+
+// Función para abrir el modal de asistencia
 attendanceBtn.onclick = () => {
   if (!currentSheet) {
     alert(
@@ -704,18 +731,26 @@ attendanceBtn.onclick = () => {
 
   // Establecer fecha actual por defecto
   const today = new Date().toISOString().split("T")[0];
-  document.getElementById("attendanceDate").value = today;
+  const dateInput = document.getElementById("attendanceDate");
+  dateInput.value = today;
+
+  // Verificar si ya existe asistencia para esta fecha
+  if (checkExistingAttendance(today)) {
+    showDateWarning(true);
+  } else {
+    showDateWarning(false);
+  }
 
   (students[currentSheet] || []).forEach((student, index) => {
     const row = document.createElement("tr");
-    const currentDate = document.getElementById("attendanceDate").value;
-    const currentStatus = student.asistencia?.[currentDate] || "";
+    const currentDate = dateInput.value;
+    const currentStatus = student.asistencia?.[currentDate] || "asistio";
 
     row.innerHTML = `
       <td>${student.nombre}</td>
       <td>
         <input type="radio" name="attendance-${index}" value="asistio" 
-               ${currentStatus === "" ? "checked" : ""} 
+               ${currentStatus === "asistio" ? "checked" : ""} 
                class="attendance-option" data-index="${index}">
       </td>
       <td>
@@ -731,7 +766,56 @@ attendanceBtn.onclick = () => {
     `;
     attendanceTableBody.appendChild(row);
   });
+
+  // Agregar listener para verificar duplicados al cambiar fecha
+  dateInput.addEventListener("change", function () {
+    if (checkExistingAttendance(this.value)) {
+      showDateWarning(true);
+
+      // Actualizar los estados según la asistencia ya registrada
+      (students[currentSheet] || []).forEach((student, index) => {
+        const status = student.asistencia?.[this.value] || "asistio";
+        const radio = document.querySelector(
+          `input[name="attendance-${index}"][value="${status}"]`
+        );
+        if (radio) radio.checked = true;
+      });
+    } else {
+      showDateWarning(false);
+
+      // Resetear todos a "asistió" para nueva fecha
+      document
+        .querySelectorAll('.attendance-option[value="asistio"]')
+        .forEach((radio) => {
+          radio.checked = true;
+        });
+    }
+  });
 };
+
+// Función para mostrar/ocultar advertencia de fecha duplicada
+function showDateWarning(show) {
+  // Crear o actualizar el elemento de advertencia
+  let warningElement = document.getElementById("dateWarning");
+  if (!warningElement) {
+    warningElement = document.createElement("div");
+    warningElement.id = "dateWarning";
+    warningElement.className = "alert alert-warning mt-2";
+    document
+      .getElementById("attendanceDate")
+      .parentNode.appendChild(warningElement);
+  }
+
+  if (show) {
+    warningElement.innerHTML = `
+      <i class="fas fa-exclamation-triangle"></i>
+      Ya existe asistencia registrada para esta fecha. Al guardar, se actualizarán los registros existentes.
+    `;
+    warningElement.classList.remove("d-none");
+  } else {
+    warningElement.classList.add("d-none");
+  }
+}
 
 // Guardar asistencia
 document.getElementById("saveAttendance").onclick = async () => {
@@ -743,11 +827,8 @@ document.getElementById("saveAttendance").onclick = async () => {
     return;
   }
 
-  // Registrar el día de clase si no existe
-  if (!classDays.includes(fecha)) {
-    classDays.push(fecha);
-  }
-
+  // Actualizar la asistencia de cada estudiante
+  let hasChanges = false;
   document.querySelectorAll(".attendance-option").forEach((radio) => {
     if (radio.checked) {
       const index = radio.getAttribute("data-index");
@@ -757,27 +838,34 @@ document.getElementById("saveAttendance").onclick = async () => {
         students[currentSheet][index].asistencia = {};
       }
 
-      if (status === "asistio") {
-        delete students[currentSheet][index].asistencia[fecha];
-      } else {
+      // Solo guardar si el estado es diferente del actual
+      const currentStatus = students[currentSheet][index].asistencia[fecha];
+      if (currentStatus !== status) {
         students[currentSheet][index].asistencia[fecha] = status;
+        hasChanges = true;
       }
     }
   });
 
-  try {
-    await saveUserData();
-    renderStudents(searchBox.value);
+  if (hasChanges) {
+    try {
+      await saveUserData();
+      renderStudents(searchBox.value);
+      bootstrap.Modal.getInstance(
+        document.getElementById("attendanceModal")
+      ).hide();
+    } catch (error) {
+      console.error("Error guardando asistencia:", error);
+      alert("Error al guardar la asistencia");
+    }
+  } else {
     bootstrap.Modal.getInstance(
       document.getElementById("attendanceModal")
     ).hide();
-  } catch (error) {
-    console.error("Error guardando asistencia:", error);
-    alert("Error al guardar la asistencia");
   }
 };
 
-// ===== FUNCIONES DE EDICIÓN DE ESTUDIANTES =====
+// ===== FUNCIONES DE EDICIÓN DE ESTUDIANTES MEJORADAS =====
 function editStudent(index) {
   if (!currentSheet) return;
 
@@ -793,7 +881,7 @@ function editStudent(index) {
     addNoteField(note, noteIndex);
   });
 
-  // Llenar asistencia por fecha
+  // Llenar asistencia por fecha - MOSTRAR TODOS LOS DÍAS DE CLASE
   const attendanceContainer = document.getElementById(
     "editAttendanceContainer"
   );
@@ -907,6 +995,7 @@ document.getElementById("saveEditStudent").onclick = async () => {
     }
 
     if (status === "asistio") {
+      // No guardar "asistio" explícitamente para ahorrar espacio
       delete student.asistencia[fecha];
     } else {
       student.asistencia[fecha] = status;

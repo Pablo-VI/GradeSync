@@ -11,6 +11,15 @@
   display: block !important;
 }
 
+/* ===== CORRECCIÓN ESPECÍFICA PARA LOGIN Y APP ===== */
+#login-container.d-none {
+  display: none !important;
+}
+
+#app.d-block {
+  display: block !important;
+}
+
 /* ===== ESTILOS DEL LOGIN ===== */
 .login-container {
   min-height: 100vh;
@@ -32,7 +41,7 @@ body {
   display: flex !important;
   flex-direction: column !important;
   min-height: 100vh !important;
-  background-color: #f8f9fa;
+  background-color: #ffffff;
   transition: all 0.3s ease;
 }
 
@@ -136,10 +145,8 @@ footer.bg-dark.text-center.text-white.py-3.mt-auto {
 
 /* ===== TABLA CON SCROLL - CORREGIDO ===== */
 .table-container {
-  flex: 1 !important;
   overflow-y: auto !important;
   scrollbar-width: none !important;
-  min-height: 200px !important;
   display: flex !important;
   flex-direction: column !important;
 }
@@ -178,27 +185,48 @@ footer.bg-dark.text-center.text-white.py-3.mt-auto {
   height: 100% !important;
 }
 
-/* Asegurar que la tabla ocupe todo el espacio disponible */
-.table-container table {
-  height: 100% !important;
-  margin-bottom: 0 !important;
-}
 
-.table-container table tbody {
-  height: 100% !important;
-  display: table !important;
-  width: 100% !important;
-}
 
-/* Colores semáforo */
-.tr-rojo {
+/* ===== SEMÁFORO DE RENDIMIENTO - ESPECIFICIDAD MÁXIMA ===== */
+.table tbody tr.tr-rojo,
+.table tbody tr.tr-rojo td {
   background-color: #f8d7da !important;
 }
-.tr-amarillo {
+
+.table tbody tr.tr-amarillo,
+.table tbody tr.tr-amarillo td {
   background-color: #fff3cd !important;
 }
-.tr-verde {
+
+.table tbody tr.tr-verde,
+.table tbody tr.tr-verde td {
   background-color: #d4edda !important;
+}
+
+/* Anular el hover de Bootstrap para las filas coloreadas */
+.table-hover tbody tr.tr-rojo:hover td,
+.table-hover tbody tr.tr-amarillo:hover td,
+.table-hover tbody tr.tr-verde:hover td {
+  background-color: inherit !important;
+}
+
+/* Tema oscuro */
+.dark-theme .table tbody tr.tr-rojo,
+.dark-theme .table tbody tr.tr-rojo td {
+  background-color: #5c2a2a !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .table tbody tr.tr-amarillo,
+.dark-theme .table tbody tr.tr-amarillo td {
+  background-color: #5c4a2a !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .table tbody tr.tr-verde,
+.dark-theme .table tbody tr.tr-verde td {
+  background-color: #2a5c3a !important;
+  color: #ffffff !important;
 }
 
 /* Sticky header */
@@ -339,4 +367,36 @@ thead.sticky-top th {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Estilos para la gestión de asistencia mejorada */
+.attendance-option {
+  margin: 0 5px;
+}
+
+.duplicate-warning {
+  color: #856404;
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  text-align: center;
+}
+
+.empty-state h3 {
+  margin-bottom: 1rem;
+}
+
+.empty-state p {
+  margin-bottom: 1.5rem;
+  color: #6c757d;
 }
