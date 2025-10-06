@@ -117,7 +117,7 @@ body
   min-height: 300px !important;
 }
 
-/* ===== FOOTER - ESPECIFICIDAD AUMENTADA ===== */
+/* ===== FOOTER  ===== */
 body #app footer {
   flex-shrink: 0 !important;
   width: 100% !important;
@@ -184,8 +184,6 @@ footer.bg-dark.text-center.text-white.py-3.mt-auto {
 .table-container table tbody tr {
   height: 100% !important;
 }
-
-
 
 /* ===== SEMÁFORO DE RENDIMIENTO - ESPECIFICIDAD MÁXIMA ===== */
 .table tbody tr.tr-rojo,
