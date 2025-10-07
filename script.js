@@ -1,7 +1,3 @@
-// ===== CONFIGURACIÓN FIREBASE =====
-const auth = firebase.auth();
-const db = firebase.firestore();
-
 // ===== VARIABLES GLOBALES =====
 let students = {};
 let sheets = [];
@@ -10,9 +6,166 @@ let classDays = []; // Array para almacenar todos los días con asistencia regis
 let editingStudentIndex = -1;
 let currentUser = null;
 
+// ===== UTILIDADES DE SEGURIDAD =====
+const SecurityUtils = {
+  sanitizeString: (str) => {
+    if (typeof str !== "string") return "";
+    return str.trim().replace(/[<>'"&]/g, "");
+  },
+
+  validateEmail: (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  },
+
+  sanitizeStudentName: (name) => {
+    if (typeof name !== "string") return "";
+
+    // Eliminar caracteres especiales pero permitir acentos y espacios
+    const sanitized = name
+      .trim()
+      .replace(/[<>'"&\\/]/g, "") // Eliminar caracteres peligrosos
+      .replace(/\s+/g, " ") // Normalizar espacios múltiples
+      .substring(0, 100); // Limitar longitud
+
+    // Validar que no sea solo espacios
+    return sanitized.trim() === "" ? "" : sanitized;
+  },
+
+  validatePassword: (password) => {
+    // Mínimo 6 caracteres, al menos una letra y un número
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{6,}$/;
+    return passwordRegex.test(password);
+  },
+
+  validateNote: (note) => {
+    const num = parseFloat(note);
+    return !isNaN(num) && num >= 0 && num <= 10;
+  },
+
+  validateDate: (dateString) => {
+    const date = new Date(dateString);
+    return date instanceof Date && !isNaN(date) && date <= new Date();
+  },
+};
+
+// ===== SISTEMA DE NOTIFICACIONES =====
+function showToast(message, type = "info") {
+  // Crear contenedor si no existe
+  let toastContainer = document.getElementById("toast-container");
+  if (!toastContainer) {
+    toastContainer = document.createElement("div");
+    toastContainer.id = "toast-container";
+    toastContainer.style.position = "fixed";
+    toastContainer.style.bottom = "20px";
+    toastContainer.style.right = "20px";
+    toastContainer.style.zIndex = "9999";
+    toastContainer.style.maxWidth = "400px";
+    document.body.appendChild(toastContainer);
+  }
+
+  // Determinar clase de color según el tipo
+  let bgClass, icon;
+  switch (type) {
+    case "success":
+      bgClass = "alert-success";
+      icon = "fa-check-circle";
+      break;
+    case "error":
+      bgClass = "alert-danger";
+      icon = "fa-exclamation-circle";
+      break;
+    case "warning":
+      bgClass = "alert-warning";
+      icon = "fa-exclamation-triangle";
+      break;
+    default:
+      bgClass = "alert-info";
+      icon = "fa-info-circle";
+  }
+
+  const toastId = "toast-" + Date.now();
+  const toast = document.createElement("div");
+  toast.id = toastId;
+  toast.className = `alert ${bgClass} alert-dismissible fade show mb-2`;
+  toast.style.minWidth = "300px";
+  toast.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+  toast.innerHTML = `
+    <i class="fas ${icon} me-2"></i>
+    ${message}
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+  `;
+
+  toastContainer.appendChild(toast);
+
+  // Auto-eliminar después de 5 segundos
+  setTimeout(() => {
+    const toastElement = document.getElementById(toastId);
+    if (toastElement && toastElement.parentElement) {
+      toastElement.remove();
+    }
+  }, 3000);
+}
+
+// ===== SISTEMA DE CONFIRMACIÓN CON MODAL =====
+function showConfirmation(message, confirmCallback, cancelCallback = null) {
+  // Crear modal de confirmación si no existe
+  let confirmModal = document.getElementById("confirmationModal");
+  if (!confirmModal) {
+    confirmModal = document.createElement("div");
+    confirmModal.id = "confirmationModal";
+    confirmModal.className = "modal fade";
+    confirmModal.tabIndex = "-1";
+    confirmModal.innerHTML = `
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Confirmación</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p id="confirmationMessage"></p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" id="confirmCancelBtn">Cancelar</button>
+            <button type="button" class="btn btn-danger" id="confirmOkBtn">Aceptar</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(confirmModal);
+  }
+
+  // Configurar mensaje y eventos
+  document.getElementById("confirmationMessage").textContent = message;
+
+  const modal = new bootstrap.Modal(confirmModal);
+  modal.show();
+
+  // Limpiar event listeners previos
+  const okBtn = document.getElementById("confirmOkBtn");
+  const cancelBtn = document.getElementById("confirmCancelBtn");
+
+  const cleanUp = () => {
+    okBtn.onclick = null;
+    cancelBtn.onclick = null;
+    modal.hide();
+  };
+
+  okBtn.onclick = () => {
+    cleanUp();
+    confirmCallback();
+  };
+
+  cancelBtn.onclick = () => {
+    cleanUp();
+    if (cancelCallback) cancelCallback();
+  };
+}
+
 // ===== REFERENCIAS DEL DOM =====
 const loginContainer = document.getElementById("login-container");
-const app = document.getElementById("app");
+const appContainer = document.getElementById("app");
 const loginForm = document.getElementById("login-form");
 const registerBtn = document.getElementById("register-btn");
 const googleLoginBtn = document.getElementById("google-login-btn");
@@ -54,8 +207,8 @@ auth.onAuthStateChanged(async (user) => {
 
     // ✅ Ocultar login y mostrar app usando clases
     loginContainer.classList.add("d-none");
-    app.classList.remove("d-none");
-    app.classList.add("d-block");
+    appContainer.classList.remove("d-none");
+    appContainer.classList.add("d-block");
 
     console.log("Ocultando login, mostrando app");
 
@@ -67,8 +220,8 @@ auth.onAuthStateChanged(async (user) => {
 
     // ✅ Mostrar login y ocultar app usando clases
     loginContainer.classList.remove("d-none");
-    app.classList.add("d-none");
-    app.classList.remove("d-block");
+    appContainer.classList.add("d-none");
+    appContainer.classList.remove("d-block");
 
     console.log("Mostrando login, ocultando app");
 
@@ -104,6 +257,12 @@ loginForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = document.getElementById("login-email").value;
   const password = document.getElementById("login-password").value;
+
+  // Validar email
+  if (!SecurityUtils.validateEmail(email)) {
+    showAuthAlert("Por favor, introduce un email válido", "danger");
+    return;
+  }
 
   setLoading("login", true);
 
@@ -141,8 +300,11 @@ registerForm.addEventListener("submit", async (e) => {
     return;
   }
 
-  if (password.length < 6) {
-    showAuthAlert("La contraseña debe tener al menos 6 caracteres", "danger");
+  if (!SecurityUtils.validatePassword(password)) {
+    showAuthAlert(
+      "La contraseña debe tener al menos 6 caracteres, incluyendo letras y números",
+      "danger"
+    );
     return;
   }
 
@@ -273,36 +435,45 @@ async function initializeUserData() {
 }
 
 // Cargar datos del usuario actual
+// Cargar datos del usuario actual - VERSIÓN SIMPLE Y FUNCIONAL
 async function loadUserData() {
   if (!currentUser) return;
 
   try {
+    console.log("🔍 Cargando datos para usuario:", currentUser.uid);
+
     const userDoc = await db.collection("users").doc(currentUser.uid).get();
 
     if (userDoc.exists) {
       const data = userDoc.data();
-      console.log("Datos cargados para usuario:", currentUser.uid, data);
+      console.log("✅ Datos cargados exitosamente");
 
-      // Asegurarnos de que cada usuario solo vea sus datos
       students = data.students || {};
       sheets = data.sheets || [];
       classDays = data.classDays || [];
       currentSheet = sheets[0] || "";
+
+      // Inicializar la aplicación
+      initApp();
     } else {
-      // Crear documento inicial para el usuario
-      console.log(
-        "Creando datos iniciales para nuevo usuario:",
-        currentUser.uid
-      );
+      console.log("🆕 Creando datos iniciales para nuevo usuario");
       await initializeUserData();
+      initApp();
     }
   } catch (error) {
-    console.error("Error cargando datos:", error);
-    // En caso de error, inicializar datos vacíos
+    console.error("❌ Error cargando datos:", error);
+
+    // Datos por defecto
     students = {};
     sheets = [];
     classDays = [];
     currentSheet = "";
+
+    // Mostrar error al usuario
+    showToast(
+      "Error al cargar los datos. Intenta recargar la página.",
+      "error"
+    );
   }
 }
 
@@ -314,6 +485,9 @@ async function saveUserData() {
   }
 
   try {
+    // Pequeño delay para asegurar que App Check esté listo
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     const userData = {
       students,
       sheets,
@@ -323,14 +497,33 @@ async function saveUserData() {
       userName: currentUser.displayName,
     };
 
-    console.log("Guardando datos para usuario:", currentUser.uid, userData);
+    console.log("💾 Guardando datos para usuario:", currentUser.uid);
 
     await db
       .collection("users")
       .doc(currentUser.uid)
       .set(userData, { merge: true });
+
+    console.log("✅ Datos guardados exitosamente");
   } catch (error) {
-    console.error("Error guardando datos:", error);
+    console.error("❌ Error guardando datos:", error);
+
+    // Reintentar una vez
+    if (error.code === "permission-denied") {
+      console.log("🔄 Reintentando guardar datos...");
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      try {
+        await db
+          .collection("users")
+          .doc(currentUser.uid)
+          .set(userData, { merge: true });
+        console.log("✅ Datos guardados en reintento");
+        return;
+      } catch (retryError) {
+        console.error("❌ Error en reintento:", retryError);
+      }
+    }
+
     throw error;
   }
 }
@@ -403,27 +596,25 @@ function changeSheet(sheet) {
 
 // ===== ELIMINAR HOJA =====
 async function deleteSheet(sheetName) {
-  if (
-    !confirm(
-      `¿Estás seguro de eliminar la hoja "${sheetName}" y todos sus datos?`
-    )
-  )
-    return;
+  showConfirmation(
+    `¿Estás seguro de eliminar la hoja "${sheetName}" y todos sus datos?`,
+    async () => {
+      sheets = sheets.filter((s) => s !== sheetName);
+      delete students[sheetName];
+      currentSheet = sheets[0] || "";
 
-  sheets = sheets.filter((s) => s !== sheetName);
-  delete students[sheetName];
-
-  currentSheet = sheets[0] || "";
-
-  try {
-    await saveUserData();
-    renderSheets();
-    renderStudents(searchBox.value);
-    updateButtonsState();
-  } catch (error) {
-    console.error("Error eliminando hoja:", error);
-    alert("Error al eliminar la hoja");
-  }
+      try {
+        await saveUserData();
+        renderSheets();
+        renderStudents(searchBox.value);
+        updateButtonsState();
+        showToast("Hoja eliminada correctamente", "success");
+      } catch (error) {
+        console.error("Error eliminando hoja:", error);
+        showToast("Error al eliminar la hoja", "error");
+      }
+    }
+  );
 }
 
 // ===== CALCULAR DÍAS DE CLASE =====
@@ -613,57 +804,88 @@ function updateStudentSelect() {
   });
 }
 
-// ===== AÑADIR ESTUDIANTE =====
+// ===== AÑADIR ESTUDIANTE - VERSIÓN SEGURA =====
 document.getElementById("saveStudent").onclick = async () => {
   if (!currentSheet) {
-    alert("⚠️ Debes crear o seleccionar una hoja antes de añadir estudiantes.");
+    showToast(
+      "Debes crear o seleccionar una hoja antes de añadir estudiantes.",
+      "warning"
+    );
     return;
   }
 
-  const nombre = document.getElementById("nameInput").value.trim();
-  if (nombre) {
-    students[currentSheet].push({
-      nombre,
-      notas: [],
-      asistencia: {},
-    });
+  const rawName = document.getElementById("nameInput").value;
+  const nombre = SecurityUtils.sanitizeStudentName(rawName);
 
-    try {
-      await saveUserData();
-      renderStudents(searchBox.value);
-      bootstrap.Modal.getInstance(
-        document.getElementById("studentModal")
-      ).hide();
-      document.getElementById("nameInput").value = "";
-    } catch (error) {
-      console.error("Error guardando estudiante:", error);
-      alert("Error al guardar el estudiante");
-    }
+  if (!nombre) {
+    showToast("El nombre no puede estar vacío", "error");
+    return;
+  }
+
+  // Verificar duplicados
+  const isDuplicate = students[currentSheet].some(
+    (student) => student.nombre.toLowerCase() === nombre.toLowerCase()
+  );
+
+  if (isDuplicate) {
+    showToast("Ya existe un estudiante con ese nombre", "error");
+    return;
+  }
+
+  students[currentSheet].push({
+    nombre,
+    notas: [],
+    asistencia: {},
+  });
+
+  try {
+    await saveUserData();
+    renderStudents(searchBox.value);
+    bootstrap.Modal.getInstance(document.getElementById("studentModal")).hide();
+    document.getElementById("nameInput").value = "";
+    showToast("Estudiante añadido correctamente", "success");
+  } catch (error) {
+    console.error("Error guardando estudiante:", error);
+    showToast("Error al guardar el estudiante", "error");
   }
 };
 
 // ===== AÑADIR NOTA =====
+// ===== AÑADIR NOTA - VERSIÓN SEGURA =====
 document.getElementById("saveNote").onclick = async () => {
   if (!currentSheet) {
-    alert("⚠️ Debes crear o seleccionar una hoja antes de añadir notas.");
+    showToast(
+      "Debes crear o seleccionar una hoja antes de añadir notas.",
+      "warning"
+    );
     return;
   }
 
   const idx = studentSelect.value;
-  const nota = parseFloat(document.getElementById("noteInput").value);
+  const notaInput = document.getElementById("noteInput").value;
 
-  if (idx !== "" && !isNaN(nota) && nota >= 0 && nota <= 10) {
-    students[currentSheet][idx].notas.push(nota);
+  if (idx === "") {
+    showToast("Selecciona un estudiante", "error");
+    return;
+  }
 
-    try {
-      await saveUserData();
-      renderStudents(searchBox.value);
-      bootstrap.Modal.getInstance(document.getElementById("noteModal")).hide();
-      document.getElementById("noteInput").value = "";
-    } catch (error) {
-      console.error("Error guardando nota:", error);
-      alert("Error al guardar la nota");
-    }
+  if (!SecurityUtils.validateNote(notaInput)) {
+    showToast("La nota debe ser un número entre 0 y 10", "error");
+    return;
+  }
+
+  const nota = parseFloat(notaInput);
+  students[currentSheet][idx].notas.push(nota);
+
+  try {
+    await saveUserData();
+    renderStudents(searchBox.value);
+    bootstrap.Modal.getInstance(document.getElementById("noteModal")).hide();
+    document.getElementById("noteInput").value = "";
+    showToast("Nota añadida correctamente", "success");
+  } catch (error) {
+    console.error("Error guardando nota:", error);
+    showToast("Error al guardar la nota", "error");
   }
 };
 
@@ -671,17 +893,22 @@ document.getElementById("saveNote").onclick = async () => {
 async function deleteStudent(idx) {
   if (!currentSheet) return;
 
-  if (!confirm("¿Estás seguro de eliminar este estudiante?")) return;
+  const studentName = students[currentSheet][idx].nombre;
+  showConfirmation(
+    `¿Estás seguro de eliminar al estudiante "${studentName}"?`,
+    async () => {
+      students[currentSheet].splice(idx, 1);
 
-  students[currentSheet].splice(idx, 1);
-
-  try {
-    await saveUserData();
-    renderStudents(searchBox.value);
-  } catch (error) {
-    console.error("Error eliminando estudiante:", error);
-    alert("Error al eliminar el estudiante");
-  }
+      try {
+        await saveUserData();
+        renderStudents(searchBox.value);
+        showToast("Estudiante eliminado correctamente", "success");
+      } catch (error) {
+        console.error("Error eliminando estudiante:", error);
+        showToast("Error al eliminar el estudiante", "error");
+      }
+    }
+  );
 }
 
 // ===== BUSCAR =====
@@ -689,26 +916,79 @@ searchBox.addEventListener("input", () => renderStudents(searchBox.value));
 
 // ===== CREAR NUEVA HOJA =====
 document.getElementById("newSheet").onclick = async () => {
-  const name = prompt("Nombre de la nueva hoja:");
-  if (name) {
+  // Crear modal para nombre de hoja
+  let sheetModal = document.getElementById("newSheetModal");
+  if (!sheetModal) {
+    sheetModal = document.createElement("div");
+    sheetModal.id = "newSheetModal";
+    sheetModal.className = "modal fade";
+    sheetModal.tabIndex = "-1";
+    sheetModal.innerHTML = `
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Nueva Hoja</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="text" id="newSheetName" class="form-control" placeholder="Nombre de la nueva hoja" maxlength="50">
+            <div class="invalid-feedback" id="sheetNameError"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="createSheetBtn">Crear</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(sheetModal);
+  }
+
+  const modal = new bootstrap.Modal(sheetModal);
+  modal.show();
+
+  document.getElementById("newSheetName").value = "";
+  document.getElementById("newSheetName").classList.remove("is-invalid");
+
+  const createSheet = async () => {
+    const name = SecurityUtils.sanitizeString(
+      document.getElementById("newSheetName").value.trim()
+    );
+
+    if (!name) {
+      document.getElementById("newSheetName").classList.add("is-invalid");
+      document.getElementById("sheetNameError").textContent =
+        "El nombre no puede estar vacío";
+      return;
+    }
+
     if (sheets.includes(name)) {
-      alert("⚠️ Ya existe una hoja con ese nombre.");
+      document.getElementById("newSheetName").classList.add("is-invalid");
+      document.getElementById("sheetNameError").textContent =
+        "Ya existe una hoja con ese nombre";
       return;
     }
 
     sheets.push(name);
     students[name] = [];
 
+    modal.hide();
+
     try {
       await saveUserData();
       changeSheet(name);
+      showToast("Hoja creada correctamente", "success");
     } catch (error) {
       console.error("Error creando hoja:", error);
-      alert("Error al crear la hoja");
+      showToast("Error al crear la hoja", "error");
     }
-  }
-};
+  };
 
+  document.getElementById("createSheetBtn").onclick = createSheet;
+  document.getElementById("newSheetName").onkeypress = (e) => {
+    if (e.key === "Enter") createSheet();
+  };
+};
 // ===== GESTIÓN DE ASISTENCIA MEJORADA =====
 
 // Función para verificar si ya existe asistencia para una fecha
@@ -823,7 +1103,13 @@ document.getElementById("saveAttendance").onclick = async () => {
 
   const fecha = document.getElementById("attendanceDate").value;
   if (!fecha) {
-    alert("Por favor, selecciona una fecha.");
+    showToast("Por favor, selecciona una fecha.", "error");
+    return;
+  }
+
+  // Validar fecha
+  if (!SecurityUtils.validateDate(fecha)) {
+    showToast("La fecha seleccionada no es válida", "error");
     return;
   }
 
@@ -854,14 +1140,16 @@ document.getElementById("saveAttendance").onclick = async () => {
       bootstrap.Modal.getInstance(
         document.getElementById("attendanceModal")
       ).hide();
+      showToast("Asistencia guardada correctamente", "success");
     } catch (error) {
       console.error("Error guardando asistencia:", error);
-      alert("Error al guardar la asistencia");
+      showToast("Error al guardar la asistencia", "error");
     }
   } else {
     bootstrap.Modal.getInstance(
       document.getElementById("attendanceModal")
     ).hide();
+    showToast("No se realizaron cambios en la asistencia", "info");
   }
 };
 
@@ -969,21 +1257,31 @@ document.getElementById("saveEditStudent").onclick = async () => {
   const student = students[currentSheet][editingStudentIndex];
 
   // Actualizar nombre
-  const newName = document.getElementById("editStudentName").value.trim();
+  const rawName = document.getElementById("editStudentName").value;
+  const newName = SecurityUtils.sanitizeStudentName(rawName);
+
   if (!newName) {
-    alert("El nombre no puede estar vacío");
+    showToast("El nombre no puede estar vacío", "error");
     return;
   }
+
   student.nombre = newName;
 
   // Actualizar notas
   student.notas = [];
+  let hasInvalidNote = false;
   document.querySelectorAll(".note-input").forEach((input) => {
     const value = parseFloat(input.value);
     if (!isNaN(value) && value >= 0 && value <= 10) {
       student.notas.push(value);
+    } else if (input.value.trim() !== "") {
+      hasInvalidNote = true;
     }
   });
+
+  if (hasInvalidNote) {
+    showToast("Algunas notas no eran válidas y fueron ignoradas", "warning");
+  }
 
   // Actualizar asistencia
   document.querySelectorAll(".attendance-status").forEach((select) => {
@@ -995,7 +1293,6 @@ document.getElementById("saveEditStudent").onclick = async () => {
     }
 
     if (status === "asistio") {
-      // No guardar "asistio" explícitamente para ahorrar espacio
       delete student.asistencia[fecha];
     } else {
       student.asistencia[fecha] = status;
@@ -1009,9 +1306,10 @@ document.getElementById("saveEditStudent").onclick = async () => {
       document.getElementById("editStudentModal")
     ).hide();
     editingStudentIndex = -1;
+    showToast("Estudiante actualizado correctamente", "success");
   } catch (error) {
     console.error("Error guardando cambios:", error);
-    alert("Error al guardar los cambios");
+    showToast("Error al guardar los cambios", "error");
   }
 };
 

@@ -182,10 +182,7 @@
       >
         <h2 class="m-0">📚 Gestión de Estudiantes</h2>
         <div class="d-flex gap-3 align-items-center">
-          <span
-            id="user-info"
-            class="text-light me-2 d-none d-md-inline"
-          ></span>
+          <span id="user-info" class="text-light me-2 d-md-inline"></span>
           <button id="themeToggle" class="btn btn-sm btn-outline-light">
             <i class="fas fa-moon"></i> Tema
           </button>
@@ -479,9 +476,9 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app-check.js"></script>
 
     <script>
-      // Your web app's Firebase configuration
       const firebaseConfig = {
         apiKey: "AIzaSyCKMHt0HG9-2j8zp1d65N8sTbl3RAoV_bg",
         authDomain: "sistemagestorestudiantes.firebaseapp.com",
@@ -492,8 +489,12 @@
         measurementId: "G-SV8DJYFLZE",
       };
 
-      // Initialize Firebase
-      firebase.initializeApp(firebaseConfig);
+      const app = firebase.initializeApp(firebaseConfig);
+
+      const auth = firebase.auth();
+      const db = firebase.firestore();
+
+      console.log("Firebase inicializado SIN App Check");
     </script>
     <script src="script.js"></script>
   </body>

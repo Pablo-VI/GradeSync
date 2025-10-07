@@ -20,12 +20,15 @@
   display: block !important;
 }
 
-/* ===== ESTILOS DEL LOGIN ===== */
+/* ===== CONTENEDOR DE LOGIN ===== */
 .login-container {
-  min-height: 100vh;
+  min-height: 100vh !important;
+  min-width: -webkit-fill-available !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  margin: 0;
-  padding: 0;
+
 }
 
 /* ===== ESTILOS GENERALES ===== */
@@ -132,16 +135,7 @@ footer.bg-dark.text-center.text-white.py-3.mt-auto {
   position: relative !important;
 }
 
-/* ===== CONTENEDOR DE LOGIN ===== */
-.login-container {
-  height: 100vh !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
+
 
 /* ===== TABLA CON SCROLL - CORREGIDO ===== */
 .table-container {
@@ -161,7 +155,7 @@ footer.bg-dark.text-center.text-white.py-3.mt-auto {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  min-height: 300px !important;
+  min-height: 15  0px !important;
   text-align: center !important;
   color: #6c757d !important;
   width: 100% !important;
@@ -172,7 +166,7 @@ footer.bg-dark.text-center.text-white.py-3.mt-auto {
 }
 
 .empty-state p {
-  margin-bottom: 2rem !important;
+  margin-bottom: 1.5rem !important;
 }
 
 /* Forzar que la celda de la tabla ocupe todo el espacio */
@@ -382,19 +376,70 @@ thead.sticky-top th {
   font-size: 0.875rem;
 }
 
-.empty-state {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 200px;
-  text-align: center;
+
+
+/* ===== ESTILOS MEJORADOS PARA TOASTS ===== */
+#toast-container {
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  z-index: 9999 !important;
+  max-width: 400px !important;
 }
 
-.empty-state h3 {
-  margin-bottom: 1rem;
+#toast-container .alert {
+  min-width: 300px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  border: none !important;
+  color: white !important;
+  animation: slideInRight 0.3s ease-out !important;
 }
 
-.empty-state p {
-  margin-bottom: 1.5rem;
-  color: #6c757d;
+#toast-container .alert-success {
+  background-color: #198754 !important;
+}
+
+#toast-container .alert-danger {
+  background-color: #dc3545 !important;
+}
+
+#toast-container .alert-warning {
+  background-color: #ffc107 !important;
+  color: #000 !important;
+}
+
+#toast-container .alert-info {
+  background-color: #0dcaf0 !important;
+}
+
+#toast-container .btn-close {
+  filter: invert(1) !important;
+}
+
+#toast-container .alert-warning .btn-close {
+  filter: invert(0) !important;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* ===== ESTILOS PARA MODALES DE CONFIRMACIÓN ===== */
+.modal-backdrop {
+  z-index: 1050 !important;
+}
+
+.modal {
+  z-index: 1060 !important;
+}
+
+#toast-container {
+  z-index: 1070 !important;
 }
