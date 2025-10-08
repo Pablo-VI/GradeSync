@@ -28,7 +28,6 @@
   align-items: center !important;
   justify-content: center !important;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-
 }
 
 /* ===== ESTILOS GENERALES ===== */
@@ -135,8 +134,6 @@ footer.bg-dark.text-center.text-white.py-3.mt-auto {
   position: relative !important;
 }
 
-
-
 /* ===== TABLA CON SCROLL - CORREGIDO ===== */
 .table-container {
   overflow-y: auto !important;
@@ -155,7 +152,7 @@ footer.bg-dark.text-center.text-white.py-3.mt-auto {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  min-height: 15  0px !important;
+  min-height: 15 0px !important;
   text-align: center !important;
   color: #6c757d !important;
   width: 100% !important;
@@ -376,8 +373,6 @@ thead.sticky-top th {
   font-size: 0.875rem;
 }
 
-
-
 /* ===== ESTILOS MEJORADOS PARA TOASTS ===== */
 #toast-container {
   position: fixed !important;
@@ -442,4 +437,46 @@ thead.sticky-top th {
 
 #toast-container {
   z-index: 1070 !important;
+}
+
+/* ===== ESTADOS DE ERROR Y CARGA ===== */
+.error-container,
+.loading-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  z-index: 9999;
+  display: none;
+}
+
+.error-state,
+.loading-state {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  width: 90%;
+}
+
+.dark-theme .error-container,
+.dark-theme .loading-container {
+  background: rgba(0, 0, 0, 0.95);
+}
+
+.dark-theme .error-state,
+.dark-theme .loading-state {
+  background: #2d3748;
+  color: white;
+}
+
+.error-icon {
+  font-size: 4rem;
 }

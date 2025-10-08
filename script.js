@@ -48,6 +48,150 @@ const SecurityUtils = {
     return date instanceof Date && !isNaN(date) && date <= new Date();
   },
 };
+// ===== VALIDACIÓN DE ESQUEMAS DE DATOS =====
+const DataValidation = {
+  validateStudent: (student) => {
+    if (!student || typeof student !== "object") return false;
+
+    return (
+      typeof student.nombre === "string" &&
+      student.nombre.trim().length > 0 &&
+      Array.isArray(student.notas) &&
+      student.notas.every(
+        (nota) => typeof nota === "number" && nota >= 0 && nota <= 10
+      ) &&
+      typeof student.asistencia === "object" &&
+      student.asistencia !== null
+    );
+  },
+
+  validateStudentsStructure: (studentsData) => {
+    if (!studentsData || typeof studentsData !== "object") return false;
+
+    try {
+      // Verificar que todas las hojas tengan arrays válidos
+      return Object.values(studentsData).every(
+        (sheetStudents) =>
+          Array.isArray(sheetStudents) &&
+          sheetStudents.every((student) =>
+            DataValidation.validateStudent(student)
+          )
+      );
+    } catch (error) {
+      console.error("Error validando estructura de estudiantes:", error);
+      return false;
+    }
+  },
+
+  validateUserData: (userData) => {
+    if (!userData || typeof userData !== "object") return false;
+
+    return (
+      DataValidation.validateStudentsStructure(userData.students) &&
+      Array.isArray(userData.sheets) &&
+      Array.isArray(userData.classDays) &&
+      typeof userData.userEmail === "string"
+    );
+  },
+};
+// ===== MANEJO DE ESTADOS DE ERROR EN UI =====
+const ErrorStates = {
+  showErrorState: (message, showRetry = true) => {
+    const errorHtml = `
+      <div class="error-state text-center py-5">
+        <div class="error-icon mb-3" style="font-size: 4rem;">😕</div>
+        <h3 class="text-danger mb-3">Algo salió mal</h3>
+        <p class="text-muted mb-4">${message}</p>
+        ${
+          showRetry
+            ? `
+          <button class="btn btn-primary me-2" onclick="location.reload()">
+            <i class="fas fa-redo"></i> Reintentar
+          </button>
+        `
+            : ""
+        }
+        <button class="btn btn-outline-secondary" onclick="ErrorStates.hideErrorState()">
+          <i class="fas fa-times"></i> Cerrar
+        </button>
+      </div>
+    `;
+
+    // Crear o actualizar contenedor de error
+    let errorContainer = document.getElementById("error-state-container");
+    if (!errorContainer) {
+      errorContainer = document.createElement("div");
+      errorContainer.id = "error-state-container";
+      errorContainer.className = "error-container";
+      document.body.appendChild(errorContainer);
+    }
+
+    errorContainer.innerHTML = errorHtml;
+    errorContainer.style.display = "block";
+
+    // Ocultar la aplicación principal
+    appContainer.classList.add("d-none");
+  },
+
+  hideErrorState: () => {
+    const errorContainer = document.getElementById("error-state-container");
+    if (errorContainer) {
+      errorContainer.style.display = "none";
+    }
+
+    // Mostrar la aplicación principal nuevamente
+    appContainer.classList.remove("d-none");
+  },
+
+  showLoadingState: (message = "Cargando...") => {
+    const loadingHtml = `
+      <div class="loading-state text-center py-5">
+        <div class="spinner-border text-primary mb-3" role="status">
+          <span class="visually-hidden">Cargando...</span>
+        </div>
+        <p class="text-muted">${message}</p>
+      </div>
+    `;
+
+    let loadingContainer = document.getElementById("loading-state-container");
+    if (!loadingContainer) {
+      loadingContainer = document.createElement("div");
+      loadingContainer.id = "loading-state-container";
+      loadingContainer.className = "loading-container";
+      document.body.appendChild(loadingContainer);
+    }
+
+    loadingContainer.innerHTML = loadingHtml;
+    loadingContainer.style.display = "block";
+  },
+
+  hideLoadingState: () => {
+    const loadingContainer = document.getElementById("loading-state-container");
+    if (loadingContainer) {
+      loadingContainer.style.display = "none";
+    }
+  },
+};
+const LoadingManager = {
+  show: (message = "Cargando...") => {
+    ErrorStates.showLoadingState(message);
+  },
+
+  hide: () => {
+    ErrorStates.hideLoadingState();
+  },
+
+  // Para operaciones async con auto-loading
+  wrap: async (promise, message = "Procesando...") => {
+    LoadingManager.show(message);
+    try {
+      const result = await promise;
+      return result;
+    } finally {
+      LoadingManager.hide();
+    }
+  },
+};
 
 // ===== SISTEMA DE NOTIFICACIONES =====
 function showToast(message, type = "info") {
@@ -435,9 +579,10 @@ async function initializeUserData() {
 }
 
 // Cargar datos del usuario actual
-// Cargar datos del usuario actual - VERSIÓN SIMPLE Y FUNCIONAL
 async function loadUserData() {
   if (!currentUser) return;
+
+  ErrorStates.showLoadingState("Cargando tus datos...");
 
   try {
     console.log("🔍 Cargando datos para usuario:", currentUser.uid);
@@ -448,10 +593,20 @@ async function loadUserData() {
       const data = userDoc.data();
       console.log("✅ Datos cargados exitosamente");
 
-      students = data.students || {};
-      sheets = data.sheets || [];
-      classDays = data.classDays || [];
-      currentSheet = sheets[0] || "";
+      // VALIDAR ESQUEMA DE DATOS
+      if (DataValidation.validateUserData(data)) {
+        students = data.students || {};
+        sheets = data.sheets || [];
+        classDays = data.classDays || [];
+        currentSheet = sheets[0] || "";
+      } else {
+        console.warn("⚠️ Datos corruptos detectados. Reinicializando...");
+        showToast(
+          "Se detectaron datos inconsistentes. Reinicializando...",
+          "warning"
+        );
+        await initializeUserData();
+      }
 
       // Inicializar la aplicación
       initApp();
@@ -474,57 +629,88 @@ async function loadUserData() {
       "Error al cargar los datos. Intenta recargar la página.",
       "error"
     );
+  } finally {
+    ErrorStates.hideLoadingState();
   }
 }
 
-// Guardar datos del usuario actual
+// Guardar datos del usuario actual CON REINTENTOS
 async function saveUserData() {
   if (!currentUser) {
     console.error("No hay usuario autenticado para guardar datos");
     return;
   }
 
-  try {
-    // Pequeño delay para asegurar que App Check esté listo
-    await new Promise((resolve) => setTimeout(resolve, 500));
+  return await saveUserDataWithRetry();
+}
 
-    const userData = {
-      students,
-      sheets,
-      classDays,
-      lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
-      userEmail: currentUser.email,
-      userName: currentUser.displayName,
-    };
+// Función de reintentos inteligente
+async function saveUserDataWithRetry(maxRetries = 3) {
+  if (!currentUser) return;
 
-    console.log("💾 Guardando datos para usuario:", currentUser.uid);
-
-    await db
-      .collection("users")
-      .doc(currentUser.uid)
-      .set(userData, { merge: true });
-
-    console.log("✅ Datos guardados exitosamente");
-  } catch (error) {
-    console.error("❌ Error guardando datos:", error);
-
-    // Reintentar una vez
-    if (error.code === "permission-denied") {
-      console.log("🔄 Reintentando guardar datos...");
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      try {
-        await db
-          .collection("users")
-          .doc(currentUser.uid)
-          .set(userData, { merge: true });
-        console.log("✅ Datos guardados en reintento");
-        return;
-      } catch (retryError) {
-        console.error("❌ Error en reintento:", retryError);
+  let loadingShown = false;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      if (attempt > 1 && !loadingShown) {
+        ErrorStates.showLoadingState("Sincronizando datos...");
+        loadingShown = true;
       }
-    }
 
-    throw error;
+      // Pequeño delay progresivo entre intentos
+      if (attempt > 1) {
+        await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+      }
+
+      const userData = {
+        students,
+        sheets,
+        classDays,
+        lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+        userEmail: currentUser.email,
+        userName: currentUser.displayName,
+      };
+
+      await db
+        .collection("users")
+        .doc(currentUser.uid)
+        .set(userData, { merge: true });
+
+      console.log("✅ Datos guardados exitosamente");
+      return; // Éxito - salir de la función
+    } catch (error) {
+      console.error(`❌ Error en intento ${attempt}:`, error);
+
+      // Si es el último intento, lanzar el error
+      if (attempt === maxRetries) {
+        console.error("❌ Todos los intentos fallaron");
+
+        // Mostrar error específico según el tipo
+        if (error.code === "failed-precondition") {
+          throw new Error("Error de permisos. Verifica tu conexión.");
+        } else if (error.code === "unavailable") {
+          throw new Error("Sin conexión. Los cambios se guardarán localmente.");
+        } else {
+          throw error;
+        }
+      }
+
+      // Si no es el último intento, continuar al siguiente
+      console.log(`🔄 Reintentando en ${attempt} segundos...`);
+    }
+  }
+  if (loadingShown) {
+    ErrorStates.hideLoadingState();
+  }
+}
+
+// Función auxiliar para operaciones con loading
+async function withGlobalLoading(operation, loadingMessage = "Procesando...") {
+  ErrorStates.showLoadingState(loadingMessage);
+  try {
+    const result = await operation();
+    return result;
+  } finally {
+    ErrorStates.hideLoadingState();
   }
 }
 
@@ -632,10 +818,11 @@ function calculateClassDays() {
 
 // ===== RENDER DE ESTUDIANTES =====
 function renderStudents(filter = "") {
-  tableBody.innerHTML = "";
+  try {
+    tableBody.innerHTML = "";
 
-  if (!currentSheet) {
-    tableBody.innerHTML = `
+    if (!currentSheet) {
+      tableBody.innerHTML = `
       <tr>
         <td colspan="7" class="text-center py-5">
           <div class="empty-state">
@@ -649,18 +836,18 @@ function renderStudents(filter = "") {
           </div>
         </td>
       </tr>`;
-    globalAvgEl.textContent = "0";
-    globalAbsenceEl.textContent = "0%";
-    totalClassDaysEl.textContent = "0";
-    updateStudentSelect();
-    updateButtonsState();
-    return;
-  }
+      globalAvgEl.textContent = "0";
+      globalAbsenceEl.textContent = "0%";
+      totalClassDaysEl.textContent = "0";
+      updateStudentSelect();
+      updateButtonsState();
+      return;
+    }
 
-  const alumnos = students[currentSheet] || [];
+    const alumnos = students[currentSheet] || [];
 
-  if (alumnos.length === 0) {
-    tableBody.innerHTML = `
+    if (alumnos.length === 0) {
+      tableBody.innerHTML = `
       <tr>
         <td colspan="7" class="text-center py-5">
           <div class="empty-state">
@@ -674,80 +861,80 @@ function renderStudents(filter = "") {
           </div>
         </td>
       </tr>`;
-    globalAvgEl.textContent = "0";
-    globalAbsenceEl.textContent = "0%";
-    totalClassDaysEl.textContent = "0";
-    updateStudentSelect();
-    updateButtonsState();
-    return;
-  }
+      globalAvgEl.textContent = "0";
+      globalAbsenceEl.textContent = "0%";
+      totalClassDaysEl.textContent = "0";
+      updateStudentSelect();
+      updateButtonsState();
+      return;
+    }
 
-  let totalNotas = 0,
-    totalAlumnos = 0,
-    totalFaltasNoJustificadas = 0;
+    let totalNotas = 0,
+      totalAlumnos = 0,
+      totalFaltasNoJustificadas = 0;
 
-  // Calcular días de clase (todas las fechas únicas de asistencia)
-  const classDays = calculateClassDays();
-  const totalDiasClase = classDays.length;
+    // Calcular días de clase (todas las fechas únicas de asistencia)
+    const classDays = calculateClassDays();
+    const totalDiasClase = classDays.length;
 
-  alumnos
-    .filter((st) => st.nombre.toLowerCase().includes(filter.toLowerCase()))
-    .forEach((st, idx) => {
-      // Calcular media solo si hay notas
-      let media = "";
-      let mediaNum = 0;
-      let trClass = "";
+    alumnos
+      .filter((st) => st.nombre.toLowerCase().includes(filter.toLowerCase()))
+      .forEach((st, idx) => {
+        // Calcular media solo si hay notas
+        let media = "";
+        let mediaNum = 0;
+        let trClass = "";
 
-      if (st.notas.length > 0) {
-        mediaNum = st.notas.reduce((a, b) => a + b, 0) / st.notas.length;
-        media = mediaNum.toFixed(2);
+        if (st.notas.length > 0) {
+          mediaNum = st.notas.reduce((a, b) => a + b, 0) / st.notas.length;
+          media = mediaNum.toFixed(2);
 
-        // Aplicar semáforo de rendimiento basado en la media
-        if (mediaNum < 5) {
-          trClass = "tr-rojo";
-        } else if (mediaNum < 7) {
-          trClass = "tr-amarillo";
-        } else {
-          trClass = "tr-verde";
+          // Aplicar semáforo de rendimiento basado en la media
+          if (mediaNum < 5) {
+            trClass = "tr-rojo";
+          } else if (mediaNum < 7) {
+            trClass = "tr-amarillo";
+          } else {
+            trClass = "tr-verde";
+          }
+
+          totalNotas += mediaNum;
+          totalAlumnos++;
         }
 
-        totalNotas += mediaNum;
-        totalAlumnos++;
-      }
+        const asistencia = st.asistencia || {};
 
-      const asistencia = st.asistencia || {};
+        // Calcular estadísticas de asistencia
+        const faltas = Object.values(asistencia).filter(
+          (a) => a === "falta"
+        ).length;
+        const faltasJustificadas = Object.values(asistencia).filter(
+          (a) => a === "falta-justificada"
+        ).length;
+        const retrasos = Object.values(asistencia).filter(
+          (a) => a === "retraso"
+        ).length;
 
-      // Calcular estadísticas de asistencia
-      const faltas = Object.values(asistencia).filter(
-        (a) => a === "falta"
-      ).length;
-      const faltasJustificadas = Object.values(asistencia).filter(
-        (a) => a === "falta-justificada"
-      ).length;
-      const retrasos = Object.values(asistencia).filter(
-        (a) => a === "retraso"
-      ).length;
+        totalFaltasNoJustificadas += faltas;
 
-      totalFaltasNoJustificadas += faltas;
+        // Calcular porcentaje de faltas basado en el total de días de clase
+        const porcentajeFaltasAlumno =
+          totalDiasClase > 0 ? ((faltas / totalDiasClase) * 100).toFixed(1) : 0;
 
-      // Calcular porcentaje de faltas basado en el total de días de clase
-      const porcentajeFaltasAlumno =
-        totalDiasClase > 0 ? ((faltas / totalDiasClase) * 100).toFixed(1) : 0;
+        const tr = document.createElement("tr");
 
-      const tr = document.createElement("tr");
+        // CORRECCIÓN: Aplicar la clase del semáforo directamente
+        if (trClass) {
+          tr.className = trClass;
+        }
 
-      // CORRECCIÓN: Aplicar la clase del semáforo directamente
-      if (trClass) {
-        tr.className = trClass;
-      }
-
-      tr.innerHTML = `
+        tr.innerHTML = `
         <td>${st.nombre}</td>
         <td>${st.notas.join(", ") || "Sin notas"}</td>
         <td><strong>${media || "-"}</strong></td>
         <td>${faltas} ${
-        faltasJustificadas > 0 ? `(${faltasJustificadas} just.)` : ""
-      }</td>
+          faltasJustificadas > 0 ? `(${faltasJustificadas} just.)` : ""
+        }</td>
         <td>${retrasos}</td>
         <td><span class="badge ${
           porcentajeFaltasAlumno > 20 ? "bg-danger" : "bg-warning"
@@ -761,27 +948,32 @@ function renderStudents(filter = "") {
           </button>
         </td>
       `;
-      tableBody.appendChild(tr);
-    });
+        tableBody.appendChild(tr);
+      });
 
-  // Estadísticas globales - solo contar alumnos con notas para la media global
-  const alumnosConNotas = alumnos.filter((st) => st.notas.length > 0).length;
-  globalAvgEl.textContent = alumnosConNotas
-    ? (totalNotas / alumnosConNotas).toFixed(2)
-    : "0";
+    // Estadísticas globales - solo contar alumnos con notas para la media global
+    const alumnosConNotas = alumnos.filter((st) => st.notas.length > 0).length;
+    globalAvgEl.textContent = alumnosConNotas
+      ? (totalNotas / alumnosConNotas).toFixed(2)
+      : "0";
 
-  // Calcular porcentaje global de faltas basado en el total de días de clase
-  const porcentajeFaltasGlobal =
-    totalAlumnos && totalDiasClase
-      ? (
-          (totalFaltasNoJustificadas / (totalAlumnos * totalDiasClase)) *
-          100
-        ).toFixed(1)
-      : 0;
-  globalAbsenceEl.textContent = `${porcentajeFaltasGlobal}%`;
-  totalClassDaysEl.textContent = totalDiasClase;
+    // Calcular porcentaje global de faltas basado en el total de días de clase
+    const porcentajeFaltasGlobal =
+      totalAlumnos && totalDiasClase
+        ? (
+            (totalFaltasNoJustificadas / (totalAlumnos * totalDiasClase)) *
+            100
+          ).toFixed(1)
+        : 0;
+    globalAbsenceEl.textContent = `${porcentajeFaltasGlobal}%`;
+    totalClassDaysEl.textContent = totalDiasClase;
 
-  updateStudentSelect();
+    updateStudentSelect();
+  } catch (error) {
+    console.error("Error renderizando estudiantes:", error);
+    showToast("Error al mostrar los estudiantes", "error");
+    tableBody.innerHTML = `<tr><td colspan="7">Error cargando datos</td></tr>`;
+  }
 }
 
 // ===== ACTUALIZAR SELECT DE ESTUDIANTES =====
@@ -806,52 +998,63 @@ function updateStudentSelect() {
 
 // ===== AÑADIR ESTUDIANTE - VERSIÓN SEGURA =====
 document.getElementById("saveStudent").onclick = async () => {
-  if (!currentSheet) {
-    showToast(
-      "Debes crear o seleccionar una hoja antes de añadir estudiantes.",
-      "warning"
+  await withGlobalLoading(async () => {
+    if (!currentSheet) {
+      showToast(
+        "Debes crear o seleccionar una hoja antes de añadir estudiantes.",
+        "warning"
+      );
+      return;
+    }
+
+    const rawName = document.getElementById("nameInput").value;
+    const nombre = SecurityUtils.sanitizeStudentName(rawName);
+
+    if (!nombre) {
+      showToast("El nombre no puede estar vacío", "error");
+      return;
+    }
+
+    // Verificar duplicados
+    const isDuplicate = students[currentSheet].some(
+      (student) => student.nombre.toLowerCase() === nombre.toLowerCase()
     );
-    return;
-  }
 
-  const rawName = document.getElementById("nameInput").value;
-  const nombre = SecurityUtils.sanitizeStudentName(rawName);
+    if (isDuplicate) {
+      showToast("Ya existe un estudiante con ese nombre", "error");
+      return;
+    }
 
-  if (!nombre) {
-    showToast("El nombre no puede estar vacío", "error");
-    return;
-  }
+    students[currentSheet].push({
+      nombre,
+      notas: [],
+      asistencia: {},
+    });
 
-  // Verificar duplicados
-  const isDuplicate = students[currentSheet].some(
-    (student) => student.nombre.toLowerCase() === nombre.toLowerCase()
-  );
-
-  if (isDuplicate) {
-    showToast("Ya existe un estudiante con ese nombre", "error");
-    return;
-  }
-
-  students[currentSheet].push({
-    nombre,
-    notas: [],
-    asistencia: {},
-  });
-
-  try {
-    await saveUserData();
-    renderStudents(searchBox.value);
-    bootstrap.Modal.getInstance(document.getElementById("studentModal")).hide();
-    document.getElementById("nameInput").value = "";
-    showToast("Estudiante añadido correctamente", "success");
-  } catch (error) {
-    console.error("Error guardando estudiante:", error);
-    showToast("Error al guardar el estudiante", "error");
-  }
+    try {
+      await saveUserData();
+      renderStudents(searchBox.value);
+      bootstrap.Modal.getInstance(
+        document.getElementById("studentModal")
+      ).hide();
+      document.getElementById("nameInput").value = "";
+      showToast("Estudiante añadido correctamente", "success");
+    } catch (error) {
+      console.error("Error guardando estudiante:", error);
+      if (error.message.includes("Sin conexión")) {
+        showToast(
+          "⚠️ Estudiante guardado localmente (sin conexión)",
+          "warning"
+        );
+        // Los datos están en memoria, se sincronizarán cuando haya conexión
+      } else {
+        showToast("Error al guardar el estudiante: " + error.message, "error");
+      }
+    }
+  }, "Guardando estudiante...");
 };
 
 // ===== AÑADIR NOTA =====
-// ===== AÑADIR NOTA - VERSIÓN SEGURA =====
 document.getElementById("saveNote").onclick = async () => {
   if (!currentSheet) {
     showToast(
