@@ -480,3 +480,108 @@ thead.sticky-top th {
 .error-icon {
   font-size: 4rem;
 }
+
+/* ===== ESTILOS PARA ORDENACIÓN DE COLUMNAS ===== */
+#studentsTable thead th[data-col] {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  transition: all 0.2s ease;
+  padding-right: 25px !important; /* Espacio para la flecha */
+}
+
+#studentsTable thead th[data-col]:hover {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Tema oscuro - hover */
+.dark-theme #studentsTable thead th[data-col]:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Indicadores de ordenación */
+#studentsTable thead th.sort-asc::after,
+#studentsTable thead th.sort-desc::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+}
+
+#studentsTable thead th.sort-asc::after {
+  border-bottom: 5px solid currentColor;
+}
+
+#studentsTable thead th.sort-desc::after {
+  border-top: 5px solid currentColor;
+}
+
+/* Indicador visual de columna ordenable (solo cuando no está ordenada) */
+#studentsTable thead th[data-col]:not(.sort-asc):not(.sort-desc)::before {
+  content: "↕";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.7em;
+  opacity: 0.5;
+  color: currentColor;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+/* Efecto hover para el icono de doble flecha */
+#studentsTable thead th[data-col]:not(.sort-asc):not(.sort-desc):hover::before {
+  opacity: 0.9;
+  color: #000000; /* Gris más oscuro/intenso en tema claro */
+  transform: translateY(-50%) scale(1.1); /* Ligero aumento de tamaño */
+}
+
+.dark-theme
+  #studentsTable
+  thead
+  th[data-col]:not(.sort-asc):not(.sort-desc):hover::before {
+  opacity: 1;
+  color: #eeeeee;
+  transform: translateY(-50%) scale(1.1);
+}
+
+/* Asegurar que el borde se mantenga consistente */
+#studentsTable thead.sticky-top th {
+  border-bottom: 2px solid #ffffff !important;
+}
+
+.dark-theme #studentsTable thead.sticky-top th {
+  border-bottom: 2px solid #495057 !important;
+}
+
+/* Estados de hover para temas específicos */
+#studentsTable thead th[data-col]:hover {
+  color: #212529 !important; /* Mantener el color del texto original */
+}
+
+/* Mejora visual para indicar que es clickeable */
+#studentsTable thead th[data-col] {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Estilos específicos para tema claro */
+#studentsTable thead th[data-col]:hover {
+  background-color: #e9ecef !important;
+}
+
+/* Estilos específicos para tema oscuro */
+.dark-theme #studentsTable thead th[data-col]:hover {
+  background-color: #495057 !important;
+  color: #ffffff !important;
+}
+
+/* Asegurar que las flechas sean visibles en ambos temas */
+#studentsTable thead th.sort-asc::after,
+#studentsTable thead th.sort-desc::after {
+  color: currentColor;
+}

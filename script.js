@@ -2,10 +2,13 @@
 let students = {};
 let sheets = [];
 let currentSheet = "";
-let classDays = []; // Array para almacenar todos los días con asistencia registrada
+let classDays = [];
 let editingStudentIndex = -1;
 let currentUser = null;
-
+let sortState = {
+  column: "nombre",
+  direction: "asc", // 'asc' o 'desc'
+};
 // ===== UTILIDADES DE SEGURIDAD =====
 const SecurityUtils = {
   sanitizeString: (str) => {
@@ -48,6 +51,152 @@ const SecurityUtils = {
     return date instanceof Date && !isNaN(date) && date <= new Date();
   },
 };
+
+// ===== SISTEMA DE ORDENACIÓN MEJORADO =====
+function initSorting() {
+  const headers = document.querySelectorAll(
+    "#studentsTable thead th[data-col]"
+  );
+
+  headers.forEach((header) => {
+    header.style.cursor = "pointer";
+
+    // Remover event listeners existentes para evitar duplicados
+    header.replaceWith(header.cloneNode(true));
+  });
+
+  // Re-asignar event listeners después del clonado
+  document
+    .querySelectorAll("#studentsTable thead th[data-col]")
+    .forEach((header) => {
+      header.addEventListener("click", (e) => {
+        const column = e.currentTarget.getAttribute("data-col");
+        handleSort(column);
+      });
+    });
+
+  // Aplicar ordenación inicial
+  applySorting();
+  updateSortUI();
+}
+
+function handleSort(column) {
+  // Si es la misma columna, cambiar dirección
+  if (sortState.column === column) {
+    sortState.direction = sortState.direction === "asc" ? "desc" : "asc";
+  } else {
+    // Si es columna diferente, orden ascendente por defecto
+    sortState.column = column;
+    sortState.direction = "asc";
+  }
+
+  applySorting();
+  updateSortUI();
+  renderStudents(searchBox.value);
+}
+
+function applySorting() {
+  if (!currentSheet || !students[currentSheet]) return;
+
+  const alumnos = students[currentSheet];
+
+  alumnos.sort((a, b) => {
+    let valueA, valueB;
+
+    switch (sortState.column) {
+      case "nombre":
+        valueA = a.nombre.toLowerCase();
+        valueB = b.nombre.toLowerCase();
+        break;
+
+      case "notas":
+        // Ordenar por cantidad de notas
+        valueA = a.notas.length;
+        valueB = b.notas.length;
+        break;
+
+      case "media":
+        const mediaA =
+          a.notas.length > 0
+            ? a.notas.reduce((sum, nota) => sum + nota, 0) / a.notas.length
+            : -1;
+        const mediaB =
+          b.notas.length > 0
+            ? b.notas.reduce((sum, nota) => sum + nota, 0) / b.notas.length
+            : -1;
+        valueA = mediaA;
+        valueB = mediaB;
+        break;
+
+      case "faltas":
+        valueA = countFaltas(a);
+        valueB = countFaltas(b);
+        break;
+
+      case "retrasos":
+        valueA = countRetrasos(a);
+        valueB = countRetrasos(b);
+        break;
+
+      case "porcentaje":
+        valueA = calculatePorcentajeFaltas(a);
+        valueB = calculatePorcentajeFaltas(b);
+        break;
+
+      default:
+        return 0;
+    }
+
+    // Manejar valores no definidos o nulos
+    if (valueA == null) valueA = -1;
+    if (valueB == null) valueB = -1;
+
+    // Comparar según la dirección
+    if (sortState.direction === "asc") {
+      return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
+    } else {
+      return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
+    }
+  });
+}
+
+// Funciones auxiliares para cálculos de ordenación
+function countFaltas(student) {
+  if (!student.asistencia) return 0;
+  const asistencia = student.asistencia;
+  return Object.values(asistencia).filter((a) => a === "falta").length;
+}
+
+function countRetrasos(student) {
+  if (!student.asistencia) return 0;
+  const asistencia = student.asistencia;
+  return Object.values(asistencia).filter((a) => a === "retraso").length;
+}
+
+function calculatePorcentajeFaltas(student) {
+  const totalDiasClase = calculateClassDays().length;
+  const faltas = countFaltas(student);
+  return totalDiasClase > 0 ? (faltas / totalDiasClase) * 100 : 0;
+}
+
+function updateSortUI() {
+  // Remover clases de ordenación existentes
+  const headers = document.querySelectorAll(
+    "#studentsTable thead th[data-col]"
+  );
+  headers.forEach((header) => {
+    header.classList.remove("sort-asc", "sort-desc");
+  });
+
+  // Añadir clase a la columna actualmente ordenada
+  const currentHeader = document.querySelector(
+    `#studentsTable thead th[data-col="${sortState.column}"]`
+  );
+  if (currentHeader) {
+    currentHeader.classList.add(`sort-${sortState.direction}`);
+  }
+}
+
 // ===== VALIDACIÓN DE ESQUEMAS DE DATOS =====
 const DataValidation = {
   validateStudent: (student) => {
@@ -721,6 +870,7 @@ function initApp() {
     students[currentSheet] = [];
   }
   renderSheets();
+  initSorting();
   renderStudents();
   updateButtonsState();
 }
@@ -775,7 +925,16 @@ function updateButtonsState() {
 function changeSheet(sheet) {
   currentSheet = sheet;
   if (!students[currentSheet]) students[currentSheet] = [];
+
+  // Reiniciar estado de ordenación para la nueva hoja
+  sortState = {
+    column: "nombre",
+    direction: "asc",
+  };
+
   renderSheets();
+  applySorting();
+  updateSortUI();
   renderStudents();
   updateButtonsState();
 }
