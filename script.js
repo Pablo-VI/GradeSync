@@ -965,13 +965,17 @@ async function deleteSheet(sheetName) {
 // ===== CALCULAR DÍAS DE CLASE =====
 function calculateClassDays() {
   const allDates = new Set();
-  Object.values(students).forEach((sheetStudents) => {
-    sheetStudents.forEach((student) => {
+
+  if (currentSheet && students[currentSheet]) {
+    students[currentSheet].forEach((student) => {
       Object.keys(student.asistencia || {}).forEach((date) => {
-        allDates.add(date);
+        if (student.asistencia[date]) {
+          allDates.add(date);
+        }
       });
     });
-  });
+  }
+
   return Array.from(allDates).sort();
 }
 
@@ -1087,9 +1091,20 @@ function renderStudents(filter = "") {
           tr.className = trClass;
         }
 
+        // Crear contenido de notas con funcionalidad de gráfico
+        const notasContent =
+          st.notas.length > 0
+            ? `<div style="cursor: pointer;" onclick="showStudentNotesChart(${idx})" title="Haz clic para ver gráfico de notas">
+               <div class="d-flex align-items-center justify-content-center">
+                 <span>${st.notas.join(", ")}</span>
+                 <i class="fas fa-chart-line text-primary ms-2"></i>
+               </div>
+             </div>`
+            : "Sin notas";
+
         tr.innerHTML = `
         <td>${st.nombre}</td>
-        <td>${st.notas.join(", ") || "Sin notas"}</td>
+        <td>${notasContent}</td>
         <td><strong>${media || "-"}</strong></td>
         <td>${faltas} ${
           faltasJustificadas > 0 ? `(${faltasJustificadas} just.)` : ""
@@ -1118,12 +1133,13 @@ function renderStudents(filter = "") {
 
     // Calcular porcentaje global de faltas basado en el total de días de clase
     const porcentajeFaltasGlobal =
-      totalAlumnos && totalDiasClase
+      totalDiasClase > 0 && totalAlumnos > 0
         ? (
             (totalFaltasNoJustificadas / (totalAlumnos * totalDiasClase)) *
             100
           ).toFixed(1)
         : 0;
+
     globalAbsenceEl.textContent = `${porcentajeFaltasGlobal}%`;
     totalClassDaysEl.textContent = totalDiasClase;
 
@@ -1155,62 +1171,75 @@ function updateStudentSelect() {
   });
 }
 
+// ===== ACTUALIZAR SELECT DE ESTUDIANTES =====
+function updateStudentSelect() {
+  studentSelect.innerHTML = "";
+  if (!currentSheet) return;
+
+  const optionDefault = document.createElement("option");
+  optionDefault.textContent = "Selecciona un estudiante";
+  optionDefault.value = "";
+  optionDefault.disabled = true;
+  optionDefault.selected = true;
+  studentSelect.appendChild(optionDefault);
+
+  (students[currentSheet] || []).forEach((st, idx) => {
+    const opt = document.createElement("option");
+    opt.value = idx;
+    opt.textContent = st.nombre;
+    studentSelect.appendChild(opt);
+  });
+}
+
 // ===== AÑADIR ESTUDIANTE - VERSIÓN SEGURA =====
 document.getElementById("saveStudent").onclick = async () => {
-  await withGlobalLoading(async () => {
-    if (!currentSheet) {
-      showToast(
-        "Debes crear o seleccionar una hoja antes de añadir estudiantes.",
-        "warning"
-      );
-      return;
-    }
-
-    const rawName = document.getElementById("nameInput").value;
-    const nombre = SecurityUtils.sanitizeStudentName(rawName);
-
-    if (!nombre) {
-      showToast("El nombre no puede estar vacío", "error");
-      return;
-    }
-
-    // Verificar duplicados
-    const isDuplicate = students[currentSheet].some(
-      (student) => student.nombre.toLowerCase() === nombre.toLowerCase()
+  if (!currentSheet) {
+    showToast(
+      "Debes crear o seleccionar una hoja antes de añadir estudiantes.",
+      "warning"
     );
+    return;
+  }
 
-    if (isDuplicate) {
-      showToast("Ya existe un estudiante con ese nombre", "error");
-      return;
+  const rawName = document.getElementById("nameInput").value;
+  const nombre = SecurityUtils.sanitizeStudentName(rawName);
+
+  if (!nombre) {
+    showToast("El nombre no puede estar vacío", "error");
+    return;
+  }
+
+  // Verificar duplicados
+  const isDuplicate = students[currentSheet].some(
+    (student) => student.nombre.toLowerCase() === nombre.toLowerCase()
+  );
+
+  if (isDuplicate) {
+    showToast("Ya existe un estudiante con ese nombre", "error");
+    return;
+  }
+
+  students[currentSheet].push({
+    nombre,
+    notas: [],
+    asistencia: {},
+  });
+
+  try {
+    await saveUserData();
+    renderStudents(searchBox.value);
+    bootstrap.Modal.getInstance(document.getElementById("studentModal")).hide();
+    document.getElementById("nameInput").value = "";
+    showToast("Estudiante añadido correctamente", "success");
+  } catch (error) {
+    console.error("Error guardando estudiante:", error);
+    if (error.message.includes("Sin conexión")) {
+      showToast("⚠️ Estudiante guardado localmente (sin conexión)", "warning");
+      // Los datos están en memoria, se sincronizarán cuando haya conexión
+    } else {
+      showToast("Error al guardar el estudiante: " + error.message, "error");
     }
-
-    students[currentSheet].push({
-      nombre,
-      notas: [],
-      asistencia: {},
-    });
-
-    try {
-      await saveUserData();
-      renderStudents(searchBox.value);
-      bootstrap.Modal.getInstance(
-        document.getElementById("studentModal")
-      ).hide();
-      document.getElementById("nameInput").value = "";
-      showToast("Estudiante añadido correctamente", "success");
-    } catch (error) {
-      console.error("Error guardando estudiante:", error);
-      if (error.message.includes("Sin conexión")) {
-        showToast(
-          "⚠️ Estudiante guardado localmente (sin conexión)",
-          "warning"
-        );
-        // Los datos están en memoria, se sincronizarán cuando haya conexión
-      } else {
-        showToast("Error al guardar el estudiante: " + error.message, "error");
-      }
-    }
-  }, "Guardando estudiante...");
+  }
 };
 
 // ===== AÑADIR NOTA =====
@@ -1613,6 +1642,7 @@ function removeAttendanceField(fecha) {
   editStudent(editingStudentIndex);
 }
 
+// ===== GUARDAR EDICIÓN ESTUDIANTE =====
 document.getElementById("saveEditStudent").onclick = async () => {
   if (!currentSheet || editingStudentIndex === -1) return;
 
@@ -1674,6 +1704,177 @@ document.getElementById("saveEditStudent").onclick = async () => {
     showToast("Error al guardar los cambios", "error");
   }
 };
+
+// ===== GRÁFICO DE NOTAS DEL ESTUDIANTE =====
+let notesChart = null;
+
+function showStudentNotesChart(studentIndex) {
+  if (!currentSheet) return;
+
+  const student = students[currentSheet][studentIndex];
+
+  if (!student.notas || student.notas.length === 0) {
+    showToast("Este estudiante no tiene notas para mostrar", "info");
+    return;
+  }
+
+  // Actualizar título del modal
+  document.getElementById(
+    "chartModalTitle"
+  ).textContent = `Evolución de Notas - ${student.nombre}`;
+
+  // Calcular estadísticas
+  const average =
+    student.notas.reduce((a, b) => a + b, 0) / student.notas.length;
+  const totalNotes = student.notas.length;
+  const trend = calculateTrend(student.notas);
+
+  // Actualizar estadísticas
+  document.getElementById("chartAverage").textContent = average.toFixed(2);
+  document.getElementById("chartTotalNotes").textContent = totalNotes;
+  document.getElementById("chartTrend").textContent = trend;
+
+  // Crear o actualizar el gráfico
+  renderNotesChart(student.notas, student.nombre);
+
+  // Mostrar modal
+  const chartModal = new bootstrap.Modal(
+    document.getElementById("notesChartModal")
+  );
+  chartModal.show();
+}
+
+function calculateTrend(notes) {
+  if (notes.length < 2) return "Insuficientes datos";
+
+  const firstHalf = notes.slice(0, Math.ceil(notes.length / 2));
+  const secondHalf = notes.slice(Math.ceil(notes.length / 2));
+
+  const avgFirst = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+  const avgSecond = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+
+  const difference = avgSecond - avgFirst;
+
+  if (difference > 0.5) return "📈 Mejorando";
+  if (difference < -0.5) return "📉 Bajando";
+  return "➡️ Estable";
+}
+
+function renderNotesChart(notes, studentName) {
+  const ctx = document.getElementById("notesChart").getContext("2d");
+
+  // Destruir gráfico anterior si existe
+  if (notesChart) {
+    notesChart.destroy();
+  }
+
+  // Preparar datos
+  const labels = notes.map((_, index) => `Nota ${index + 1}`);
+  const data = notes;
+
+  // Calcular línea de tendencia
+  const trendLine = calculateTrendLine(data);
+
+  notesChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: "Notas",
+          data: data,
+          borderColor: "#007bff",
+          backgroundColor: "rgba(0, 123, 255, 0.1)",
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: "#007bff",
+          pointBorderColor: "#ffffff",
+          pointBorderWidth: 2,
+          pointRadius: 6,
+          pointHoverRadius: 8,
+        },
+        {
+          label: "Tendencia",
+          data: trendLine,
+          borderColor: "#dc3545",
+          borderWidth: 2,
+          borderDash: [5, 5],
+          fill: false,
+          pointRadius: 0,
+          tension: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 10,
+          ticks: {
+            stepSize: 1,
+          },
+          grid: {
+            color: "rgba(0, 0, 0, 0.1)",
+          },
+        },
+        x: {
+          grid: {
+            color: "rgba(0, 0, 0, 0.1)",
+          },
+        },
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: "top",
+        },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              return `Nota: ${context.parsed.y.toFixed(2)}`;
+            },
+          },
+        },
+      },
+      interaction: {
+        intersect: false,
+        mode: "index",
+      },
+    },
+  });
+}
+
+function calculateTrendLine(data) {
+  if (data.length === 0) return [];
+
+  const n = data.length;
+  const x = data.map((_, i) => i);
+  const y = data;
+
+  // Calcular pendiente e intercepto (regresión lineal simple)
+  const sumX = x.reduce((a, b) => a + b, 0);
+  const sumY = y.reduce((a, b) => a + b, 0);
+  const sumXY = x.reduce((a, b, i) => a + b * y[i], 0);
+  const sumX2 = x.reduce((a, b) => a + b * b, 0);
+
+  const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+  const intercept = (sumY - slope * sumX) / n;
+
+  return x.map((xi) => slope * xi + intercept);
+}
+
+// Limpiar gráfico cuando se cierre el modal
+document
+  .getElementById("notesChartModal")
+  .addEventListener("hidden.bs.modal", function () {
+    if (notesChart) {
+      notesChart.destroy();
+      notesChart = null;
+    }
+  });
 
 // ===== TEMA OSCURO/CLARO =====
 document.getElementById("themeToggle").onclick = () => {

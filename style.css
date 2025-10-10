@@ -585,3 +585,37 @@ thead.sticky-top th {
 #studentsTable thead th.sort-desc::after {
   color: currentColor;
 }
+
+/* ===== ESTILOS PARA EL GRÁFICO DE NOTAS ===== */
+.chart-container {
+  background: white;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.dark-theme .chart-container {
+  background: #2d3748;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Estilo para la celda de notas clickeable */
+.table tbody tr td:nth-child(2) {
+  transition: background-color 0.2s ease;
+}
+
+.table tbody tr td:nth-child(2):hover {
+  background-color: rgba(0, 123, 255, 0.1) !important;
+}
+
+.dark-theme .table tbody tr td:nth-child(2):hover {
+  background-color: rgba(0, 123, 255, 0.2) !important;
+}
+
+/* Estadísticas del gráfico */
+#chartAverage,
+#chartTotalNotes,
+#chartTrend {
+  font-size: 1.1rem !important;
+  padding: 0.5rem 1rem !important;
+}
