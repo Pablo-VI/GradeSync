@@ -20,6 +20,132 @@
   display: block !important;
 }
 
+/* ================================== */
+/* ===== ESTILOS TEMA OSCURO ===== */
+/* ================================== */
+
+/* -- Paleta Principal -- */
+.dark-theme {
+  --main-bg: #26262f; /* Fondo principal (Azul Pizarra Oscuro) */
+  --surface-bg: #2d3748; /* Fondo de componentes (Tarjetas, Modales) */
+  --hover-bg: #4a5568; /* Fondo sutil y para hover (Cabeceras, Inputs) */
+  --border-color: #4a5568; /* Color de bordes */
+  --main-text: #e2e8f0; /* Color de texto principal (Blanco Pizarra) */
+  --muted-text: #a0aec0; /* Color de texto secundario */
+
+  /* -- Paleta Semáforo -- */
+  --red-bg: #4a2427;
+  --red-text: #fed7d7;
+  --yellow-bg: #4a3a19;
+  --yellow-text: #feebc8;
+  --green-bg: #234a34;
+  --green-text: #c6f6d5;
+}
+
+.dark-theme {
+  background-color: var(--main-bg) !important;
+  color: var(--main-text) !important;
+}
+
+.dark-theme .table {
+  color: var(--main-text) !important;
+  background-color: var(--surface-bg) !important;
+}
+
+.dark-theme .table-dark {
+  background-color: var(--hover-bg) !important;
+}
+
+.dark-theme .modal-content,
+.dark-theme .card,
+.dark-theme .chart-container {
+  background-color: var(--surface-bg) !important;
+  color: var(--main-text) !important;
+  border-color: var(--border-color) !important;
+}
+
+.dark-theme .form-control,
+.dark-theme .form-select {
+  background-color: var(--hover-bg) !important;
+  border-color: #718096 !important;
+  color: var(--main-text) !important;
+}
+
+.dark-theme .form-control:focus,
+.dark-theme .form-select:focus {
+  background-color: var(--hover-bg) !important;
+  border-color: #4299e1 !important;
+  color: var(--main-text) !important;
+  box-shadow: 0 0 0 0.2rem rgba(66, 153, 225, 0.25) !important;
+}
+
+.dark-theme .bg-light {
+  background-color: var(--surface-bg) !important;
+  color: var(--main-text) !important;
+}
+
+/* -- Semáforo de rendimiento con mejor contraste -- */
+.dark-theme .table tbody tr.tr-rojo,
+.dark-theme .table tbody tr.tr-rojo td {
+  background-color: var(--red-bg) !important;
+  color: var(--red-text) !important;
+}
+
+.dark-theme .table tbody tr.tr-amarillo,
+.dark-theme .table tbody tr.tr-amarillo td {
+  background-color: var(--yellow-bg) !important;
+  color: var(--yellow-text) !important;
+}
+
+.dark-theme .table tbody tr.tr-verde,
+.dark-theme .table tbody tr.tr-verde td {
+  background-color: var(--green-bg) !important;
+  color: var(--green-text) !important;
+}
+
+/* -- Estados de error y carga -- */
+.dark-theme .error-container,
+.dark-theme .loading-container {
+  background: rgba(26, 32, 44, 0.95);
+}
+
+.dark-theme .error-state,
+.dark-theme .loading-state {
+  background: var(--surface-bg);
+  color: var(--main-text);
+}
+
+/* -- Hover de tabla y ordenación -- */
+.dark-theme #studentsTable thead th[data-col]:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark-theme #studentsTable tbody tr td:nth-child(2):hover {
+  background-color: rgba(66, 153, 225, 0.2) !important;
+}
+
+.dark-theme #studentsTable thead.sticky-top th {
+  border-bottom: 2px solid var(--hover-bg) !important;
+}
+
+/* PLACEHOLDERS EN TEMA OSCURO */
+/* Selector moderno para la mayoría de navegadores */
+.dark-theme .form-control::placeholder,
+.dark-theme .form-select::placeholder {
+  /* Usamos un color casi blanco pero con algo de opacidad para diferenciarlo del texto real */
+  color: rgb(255, 255, 255, 0.8) !important; 
+  opacity: 1; /* Necesario para anular el comportamiento por defecto de Firefox */
+}
+
+/* Selectores para compatibilidad con navegadores más antiguos */
+.dark-theme .form-control::-webkit-input-placeholder {
+  color: rgb(255, 255, 255, 0.8) !important;
+}
+
+.dark-theme .form-control:-ms-input-placeholder {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
 /* ===== CONTENEDOR DE LOGIN ===== */
 .login-container {
   min-height: 100vh !important;
@@ -199,25 +325,6 @@ footer.bg-dark.text-center.text-white.py-3.mt-auto {
   background-color: inherit !important;
 }
 
-/* Tema oscuro */
-.dark-theme .table tbody tr.tr-rojo,
-.dark-theme .table tbody tr.tr-rojo td {
-  background-color: #5c2a2a !important;
-  color: #ffffff !important;
-}
-
-.dark-theme .table tbody tr.tr-amarillo,
-.dark-theme .table tbody tr.tr-amarillo td {
-  background-color: #5c4a2a !important;
-  color: #ffffff !important;
-}
-
-.dark-theme .table tbody tr.tr-verde,
-.dark-theme .table tbody tr.tr-verde td {
-  background-color: #2a5c3a !important;
-  color: #ffffff !important;
-}
-
 /* Sticky header */
 thead.sticky-top th {
   position: sticky !important;
@@ -239,55 +346,6 @@ thead.sticky-top th {
   background-color: #dc3545 !important;
   border-color: #dc3545 !important;
   color: white !important;
-}
-
-/* Estilos para el tema oscuro */
-.dark-theme {
-  background-color: #1a1a1a !important;
-  color: #ffffff !important;
-}
-
-.dark-theme .table {
-  color: #ffffff !important;
-  background-color: #2d3748 !important;
-}
-
-.dark-theme .table-dark {
-  background-color: #4a5568 !important;
-}
-
-.dark-theme .modal-content {
-  background-color: #2d3748 !important;
-  color: #ffffff !important;
-}
-
-.dark-theme .form-control {
-  background-color: #4a5568 !important;
-  border-color: #718096 !important;
-  color: #ffffff !important;
-}
-
-.dark-theme .form-control:focus {
-  background-color: #4a5568 !important;
-  border-color: #4299e1 !important;
-  color: #ffffff !important;
-  box-shadow: 0 0 0 0.2rem rgba(66, 153, 225, 0.25) !important;
-}
-
-.dark-theme .form-select {
-  background-color: #4a5568 !important;
-  border-color: #718096 !important;
-  color: #ffffff !important;
-}
-
-.dark-theme .card {
-  background-color: #2d3748 !important;
-  border-color: #4a5568 !important;
-}
-
-.dark-theme .bg-light {
-  background-color: #4a5568 !important;
-  color: #ffffff !important;
 }
 
 /* Mejoras visuales */
@@ -466,17 +524,6 @@ thead.sticky-top th {
   width: 90%;
 }
 
-.dark-theme .error-container,
-.dark-theme .loading-container {
-  background: rgba(0, 0, 0, 0.95);
-}
-
-.dark-theme .error-state,
-.dark-theme .loading-state {
-  background: #2d3748;
-  color: white;
-}
-
 .error-icon {
   font-size: 4rem;
 }
@@ -492,11 +539,6 @@ thead.sticky-top th {
 
 #studentsTable thead th[data-col]:hover {
   background-color: rgba(255, 255, 255, 0.2) !important;
-}
-
-/* Tema oscuro - hover */
-.dark-theme #studentsTable thead th[data-col]:hover {
-  background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 /* Indicadores de ordenación */
@@ -541,22 +583,9 @@ thead.sticky-top th {
   transform: translateY(-50%) scale(1.1); /* Ligero aumento de tamaño */
 }
 
-.dark-theme
-  #studentsTable
-  thead
-  th[data-col]:not(.sort-asc):not(.sort-desc):hover::before {
-  opacity: 1;
-  color: #eeeeee;
-  transform: translateY(-50%) scale(1.1);
-}
-
 /* Asegurar que el borde se mantenga consistente */
 #studentsTable thead.sticky-top th {
   border-bottom: 2px solid #ffffff !important;
-}
-
-.dark-theme #studentsTable thead.sticky-top th {
-  border-bottom: 2px solid #495057 !important;
 }
 
 /* Estados de hover para temas específicos */
@@ -574,12 +603,6 @@ thead.sticky-top th {
   background-color: #e9ecef !important;
 }
 
-/* Estilos específicos para tema oscuro */
-.dark-theme #studentsTable thead th[data-col]:hover {
-  background-color: #495057 !important;
-  color: #ffffff !important;
-}
-
 /* Asegurar que las flechas sean visibles en ambos temas */
 #studentsTable thead th.sort-asc::after,
 #studentsTable thead th.sort-desc::after {
@@ -594,11 +617,6 @@ thead.sticky-top th {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-.dark-theme .chart-container {
-  background: #2d3748;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-}
-
 /* Estilo para la celda de notas clickeable */
 .table tbody tr td:nth-child(2) {
   transition: background-color 0.2s ease;
@@ -606,10 +624,6 @@ thead.sticky-top th {
 
 .table tbody tr td:nth-child(2):hover {
   background-color: rgba(0, 123, 255, 0.1) !important;
-}
-
-.dark-theme .table tbody tr td:nth-child(2):hover {
-  background-color: rgba(0, 123, 255, 0.2) !important;
 }
 
 /* Estadísticas del gráfico */
