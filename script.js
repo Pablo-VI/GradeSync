@@ -9,6 +9,381 @@ let sortState = {
   column: "nombre",
   direction: "asc", // 'asc' o 'desc'
 };
+// ===== I18N - INTERNACIONALIZACIÓN =====
+let currentLang = localStorage.getItem("language") || "es";
+
+const translations = {
+  es: {
+    // General
+    hello: "Hola",
+    loading: "Cargando...",
+    processing: "Procesando...",
+    confirm: "Confirmación",
+    accept: "Aceptar",
+    errorOccurred: "Algo salió mal",
+    retry: "Reintentar",
+    close: "Cerrar",
+    // Auth
+    loginSuccess: "Inicio de sesión exitoso",
+    googleLoginSuccess: "Inicio de sesión con Google exitoso",
+    accountCreated: "Cuenta creada exitosamente",
+    passwordsMismatch: "Las contraseñas no coinciden",
+    passwordRequirements:
+      "La contraseña debe tener al menos 6 caracteres, incluyendo letras y números",
+    invalidEmail: "Por favor, introduce un email válido",
+    // Auth Firebase Errors
+    "auth/user-not-found": "Usuario no encontrado",
+    "auth/wrong-password": "Contraseña incorrecta",
+    "auth/email-already-in-use": "El correo ya está en uso",
+    "auth/weak-password": "La contraseña es demasiado débil",
+    "auth/invalid-email": "Correo electrónico inválido",
+    // App
+    loadingData: "Cargando tus datos...",
+    inconsistentData: "Se detectaron datos inconsistentes. Reinicializando...",
+    loadError: "Error al cargar los datos. Intenta recargar la página.",
+    syncingData: "Sincronizando datos...",
+    permissionError: "Error de permisos. Verifica tu conexión.",
+    offlineError: "Sin conexión. Los cambios se guardarán localmente.",
+    // Sheets
+    confirmDeleteSheet: (sheetName) =>
+      `¿Estás seguro de eliminar la hoja "${sheetName}" y todos sus datos?`,
+    sheetDeleted: "Hoja eliminada correctamente",
+    sheetDeleteError: "Error al eliminar la hoja",
+    newSheetModalTitle: "Nueva Hoja",
+    newSheetPlaceholder: "Nombre de la nueva hoja",
+    sheetNameEmpty: "El nombre no puede estar vacío",
+    sheetNameExists: "Ya existe una hoja con ese nombre",
+    sheetCreated: "Hoja creada correctamente",
+    sheetCreateError: "Error al crear la hoja",
+    // Students
+    noSheetSelected: "No hay hoja seleccionada",
+    noSheetSelectedBody: "Crea una nueva hoja para comenzar",
+    createFirstSheet: "Crear Primera Hoja",
+    noStudents: "No hay estudiantes",
+    noStudentsBody: "Añade estudiantes a esta hoja",
+    addFirstStudent: "Añadir Primer Estudiante",
+    studentSavedLocally: "Estudiante guardado localmente (sin conexión)",
+    studentSaveError: (message) => `Error al guardar el estudiante: ${message}`,
+    confirmDeleteStudent: (studentName) =>
+      `¿Estás seguro de eliminar al estudiante "${studentName}"?`,
+    studentDeleted: "Estudiante eliminado correctamente",
+    studentDeleteError: "Error al eliminar el estudiante",
+    studentUpdated: "Estudiante actualizado correctamente",
+    studentUpdateError: "Error al guardar los cambios",
+    addStudentSheetWarning:
+      "Debes crear o seleccionar una hoja antes de añadir estudiantes.",
+    studentNameEmpty: "El nombre no puede estar vacío",
+    studentNameDuplicate: "Ya existe un estudiante con ese nombre",
+    studentAdded: "Estudiante añadido correctamente",
+    // Notes
+    addNoteSheetWarning:
+      "Debes crear o seleccionar una hoja antes de añadir notas.",
+    selectStudent: "Selecciona un estudiante",
+    invalidNote: "La nota debe ser un número entre 0 y 10",
+    noteAdded: "Nota añadida correctamente",
+    noteSaveError: "Error al guardar la nota",
+    invalidNotesIgnored: "Algunas notas no eran válidas y fueron ignoradas",
+    noNotesForChart: "Este estudiante no tiene notas para mostrar",
+    // Attendance
+    attendanceSheetWarning:
+      "Debes crear o seleccionar una hoja antes de registrar asistencia.",
+    attendanceDateWarning:
+      "Ya existe asistencia registrada para esta fecha. Al guardar, se actualizarán los registros existentes.",
+    selectDate: "Por favor, selecciona una fecha.",
+    invalidDate: "La fecha seleccionada no es válida",
+    attendanceSaved: "Asistencia guardada correctamente",
+    attendanceSaveError: "Error al guardar la asistencia",
+    noAttendanceChanges: "No se realizaron cambios en la asistencia",
+    // Chart
+    chartTitle: (studentName) => `Evolución de Notas - ${studentName}`,
+    chartTrendInsufficient: "Insuficientes datos",
+    chartTrendImproving: "📈 Mejorando",
+    chartTrendWorsening: "📉 Bajando",
+    chartTrendStable: "➡️ Estable",
+    chartLabelNote: "Nota",
+    chartLabelTrend: "Tendencia",
+    // Table content
+    noNotes: "Sin notas",
+    justifiedAbsences: (count) => `(${count} just.)`,
+    // Render Errors
+    renderError: "Error al mostrar los estudiantes",
+    renderErrorBody: "Error cargando datos",
+    // Misc
+    langChangeNotImplemented:
+      "Funcionalidad de cambio de idioma por implementar",
+    // Static HTML text keys (from data-lang attributes)
+    appTitle: "Sistema de Gestión de Estudiantes",
+    appTitleHeader: "📚 Gestión de Estudiantes",
+    loginSubtitle: "Inicia sesión en tu cuenta",
+    emailLabel: "Correo electrónico",
+    passwordLabel: "Contraseña",
+    loginButton: "Iniciar Sesión",
+    createAccountButton: "Crear Nueva Cuenta",
+    googleLoginButton: "Continuar con Google",
+    createAccountTitle: "Crear Nueva Cuenta",
+    fullNameLabel: "Nombre completo",
+    confirmPasswordLabel: "Confirmar contraseña",
+    backToLoginButton: "Volver al inicio de sesión",
+    themeButton: "Tema",
+    logoutButton: "Salir",
+    addStudentButton: "Añadir Estudiante",
+    addNoteButton: "Añadir Nota",
+    attendanceButton: "Asistencia",
+    newSheetButton: "Nueva Hoja",
+    tableHeaderName: "Nombre",
+    tableHeaderNotes: "Notas",
+    tableHeaderAverage: "Media",
+    tableHeaderAbsences: "Faltas",
+    tableHeaderTardies: "Retrasos",
+    tableHeaderAbsencePercentage: "% Faltas",
+    tableHeaderActions: "Acciones",
+    statsGlobalAverage: "Media global:",
+    statsAbsencePercentage: "Porcentaje de faltas:",
+    statsTotalClassDays: "Total días de clase:",
+    footerText: "© 2025 Pablo Almellones Ramos | Todos los derechos reservados",
+    modalAddStudentTitle: "Añadir Estudiante",
+    cancelButton: "Cancelar",
+    saveButton: "Guardar",
+    modalAddNoteTitle: "Añadir Nota",
+    modalAttendanceTitle: "Registrar Asistencia",
+    classDateLabel: "Fecha de la clase",
+    studentHeader: "Alumno",
+    attendedHeader: "Asistió",
+    absentHeader: "Falta",
+    tardyHeader: "Retraso",
+    saveAttendanceButton: "Guardar Asistencia",
+    modalEditStudentTitle: "Editar Estudiante",
+    notesLabel: "Notas",
+    attendanceByDateLabel: "Asistencia por fecha",
+    saveChangesButton: "Guardar Cambios",
+    modalChartTitle: "Evolución de Notas",
+    chartAverageNote: "Nota Media:",
+    chartTotalNotes: "Total Notas:",
+    chartTrend: "Tendencia:",
+    closeButton: "Cerrar",
+    attendedOption: "Asistió",
+    absentOption: "Falta",
+    justifiedAbsentOption: "Falta Justificada",
+    tardyOption: "Retraso",
+    emailPlaceholder: "usuario@ejemplo.com",
+    passwordPlaceholder: "••••••••",
+    fullNamePlaceholder: "Tu nombre completo",
+    passwordMinLengthPlaceholder: "Mínimo 6 caracteres",
+    confirmPasswordPlaceholder: "Repite tu contraseña",
+    searchPlaceholder: "🔍 Buscar estudiante...",
+    notePlaceholder: "Nota (0-10)",
+    editButtonTitle: "Editar",
+    deleteButtonTitle: "Eliminar",
+    notesChartClickTitle: "Haz clic para ver gráfico de notas",
+  },
+  en: {
+    // General
+    hello: "Hello",
+    loading: "Loading...",
+    processing: "Processing...",
+    confirm: "Confirmation",
+    accept: "Accept",
+    errorOccurred: "Something went wrong",
+    retry: "Retry",
+    close: "Close",
+    // Auth
+    loginSuccess: "Login successful",
+    googleLoginSuccess: "Login with Google successful",
+    accountCreated: "Account created successfully",
+    passwordsMismatch: "Passwords do not match",
+    passwordRequirements:
+      "Password must be at least 6 characters long, including letters and numbers",
+    invalidEmail: "Please enter a valid email",
+    // Auth Firebase Errors
+    "auth/user-not-found": "User not found",
+    "auth/wrong-password": "Incorrect password",
+    "auth/email-already-in-use": "The email is already in use",
+    "auth/weak-password": "The password is too weak",
+    "auth/invalid-email": "Invalid email",
+    // App
+    loadingData: "Loading your data...",
+    inconsistentData: "Inconsistent data detected. Reinitializing...",
+    loadError: "Error loading data. Please try reloading the page.",
+    syncingData: "Syncing data...",
+    permissionError: "Permission error. Check your connection.",
+    offlineError: "No connection. Changes will be saved locally.",
+    // Sheets
+    confirmDeleteSheet: (sheetName) =>
+      `Are you sure you want to delete the sheet "${sheetName}" and all its data?`,
+    sheetDeleted: "Sheet deleted successfully",
+    sheetDeleteError: "Error deleting sheet",
+    newSheetModalTitle: "New Sheet",
+    newSheetPlaceholder: "Name of the new sheet",
+    sheetNameEmpty: "The name cannot be empty",
+    sheetNameExists: "A sheet with that name already exists",
+    sheetCreated: "Sheet created successfully",
+    sheetCreateError: "Error creating sheet",
+    // Students
+    noSheetSelected: "No sheet selected",
+    noSheetSelectedBody: "Create a new sheet to get started",
+    createFirstSheet: "Create First Sheet",
+    noStudents: "No students",
+    noStudentsBody: "Add students to this sheet",
+    addFirstStudent: "Add First Student",
+    studentSavedLocally: "Student saved locally (offline)",
+    studentSaveError: (message) => `Error saving student: ${message}`,
+    confirmDeleteStudent: (studentName) =>
+      `Are you sure you want to delete the student "${studentName}"?`,
+    studentDeleted: "Student deleted successfully",
+    studentDeleteError: "Error deleting student",
+    studentUpdated: "Student updated successfully",
+    studentUpdateError: "Error saving changes",
+    addStudentSheetWarning:
+      "You must create or select a sheet before adding students.",
+    studentNameEmpty: "The name cannot be empty",
+    studentNameDuplicate: "A student with that name already exists",
+    studentAdded: "Student added successfully",
+    // Notes
+    addNoteSheetWarning:
+      "You must create or select a sheet before adding notes.",
+    selectStudent: "Select a student",
+    invalidNote: "The grade must be a number between 0 and 10",
+    noteAdded: "Grade added successfully",
+    noteSaveError: "Error saving the grade",
+    invalidNotesIgnored: "Some invalid grades were ignored",
+    noNotesForChart: "This student has no grades to display",
+    // Attendance
+    attendanceSheetWarning:
+      "You must create or select a sheet before recording attendance.",
+    attendanceDateWarning:
+      "Attendance already exists for this date. Saving will update the existing records.",
+    selectDate: "Please select a date.",
+    invalidDate: "The selected date is not valid",
+    attendanceSaved: "Attendance saved successfully",
+    attendanceSaveError: "Error saving attendance",
+    noAttendanceChanges: "No changes were made to the attendance",
+    // Chart
+    chartTitle: (studentName) => `Grade Evolution - ${studentName}`,
+    chartTrendInsufficient: "Insufficient data",
+    chartTrendImproving: "📈 Improving",
+    chartTrendWorsening: "📉 Worsening",
+    chartTrendStable: "➡️ Stable",
+    chartLabelNote: "Grade",
+    chartLabelTrend: "Trend",
+    // Table content
+    noNotes: "No grades",
+    justifiedAbsences: (count) => `(${count} just.)`,
+    // Render Errors
+    renderError: "Error displaying students",
+    renderErrorBody: "Error loading data",
+    // Misc
+    langChangeNotImplemented: "Language change functionality to be implemented",
+    // Static HTML text keys (from data-lang attributes)
+    appTitle: "Student Management System",
+    appTitleHeader: "📚 Student Management",
+    loginSubtitle: "Log in to your account",
+    emailLabel: "Email address",
+    passwordLabel: "Password",
+    loginButton: "Log In",
+    createAccountButton: "Create New Account",
+    googleLoginButton: "Continue with Google",
+    createAccountTitle: "Create New Account",
+    fullNameLabel: "Full name",
+    confirmPasswordLabel: "Confirm password",
+    backToLoginButton: "Back to login",
+    themeButton: "Theme",
+    logoutButton: "Logout",
+    addStudentButton: "Add Student",
+    addNoteButton: "Add Grade",
+    attendanceButton: "Attendance",
+    newSheetButton: "New Sheet",
+    tableHeaderName: "Name",
+    tableHeaderNotes: "Grades",
+    tableHeaderAverage: "Average",
+    tableHeaderAbsences: "Absences",
+    tableHeaderTardies: "Tardies",
+    tableHeaderAbsencePercentage: "% Absences",
+    tableHeaderActions: "Actions",
+    statsGlobalAverage: "Global average:",
+    statsAbsencePercentage: "Absence percentage:",
+    statsTotalClassDays: "Total class days:",
+    footerText: "© 2025 Pablo Almellones Ramos | All rights reserved",
+    modalAddStudentTitle: "Add Student",
+    cancelButton: "Cancel",
+    saveButton: "Save",
+    modalAddNoteTitle: "Add Grade",
+    modalAttendanceTitle: "Record Attendance",
+    classDateLabel: "Class date",
+    studentHeader: "Student",
+    attendedHeader: "Attended",
+    absentHeader: "Absent",
+    tardyHeader: "Tardy",
+    saveAttendanceButton: "Save Attendance",
+    modalEditStudentTitle: "Edit Student",
+    notesLabel: "Grades",
+    attendanceByDateLabel: "Attendance by date",
+    saveChangesButton: "Save Changes",
+    modalChartTitle: "Grade Evolution",
+    chartAverageNote: "Average Grade:",
+    chartTotalNotes: "Total Grades:",
+    chartTrend: "Trend:",
+    closeButton: "Close",
+    attendedOption: "Attended",
+    absentOption: "Absent",
+    justifiedAbsentOption: "Justified Absent",
+    tardyOption: "Tardy",
+    emailPlaceholder: "user@example.com",
+    passwordPlaceholder: "••••••••",
+    fullNamePlaceholder: "Your full name",
+    passwordMinLengthPlaceholder: "At least 6 characters",
+    confirmPasswordPlaceholder: "Repeat your password",
+    searchPlaceholder: "🔍 Search for student...",
+    notePlaceholder: "Grade (0-10)",
+    editButtonTitle: "Edit",
+    deleteButtonTitle: "Delete",
+    notesChartClickTitle: "Click to see grade chart",
+  },
+};
+function translate(key, ...args) {
+  const translation = translations[currentLang][key];
+  if (typeof translation === "function") {
+    return translation(...args);
+  }
+  return translation || key;
+}
+
+function setLanguage(lang) {
+  currentLang = lang;
+  localStorage.setItem("language", lang);
+
+  document.documentElement.lang = lang;
+
+  // Update static text
+  document.querySelectorAll("[data-lang]").forEach((el) => {
+    const key = el.getAttribute("data-lang");
+    if (translations[lang][key]) {
+      el.textContent = translations[lang][key];
+    }
+  });
+
+  // Update placeholders
+  document.querySelectorAll("[data-lang-placeholder]").forEach((el) => {
+    const key = el.getAttribute("data-lang-placeholder");
+    if (translations[lang][key]) {
+      el.placeholder = translations[lang][key];
+    }
+  });
+
+  // Update titles
+  document.querySelectorAll("[data-lang-title]").forEach((el) => {
+    const key = el.getAttribute("data-lang-title");
+    if (translations[lang][key]) {
+      el.title = translations[lang][key];
+    }
+  });
+
+  // Re-render dynamic content
+  if (currentUser) {
+    renderStudents(searchBox.value);
+    updateStudentSelect();
+  }
+  console.log(`Language changed to ${lang}`);
+}
 // ===== UTILIDADES DE SEGURIDAD =====
 const SecurityUtils = {
   sanitizeString: (str) => {
@@ -249,19 +624,19 @@ const ErrorStates = {
     const errorHtml = `
       <div class="error-state text-center py-5">
         <div class="error-icon mb-3" style="font-size: 4rem;">😕</div>
-        <h3 class="text-danger mb-3">Algo salió mal</h3>
+        <h3 class="text-danger mb-3">${translate("errorOccurred")}</h3>
         <p class="text-muted mb-4">${message}</p>
         ${
           showRetry
             ? `
           <button class="btn btn-primary me-2" onclick="location.reload()">
-            <i class="fas fa-redo"></i> Reintentar
+            <i class="fas fa-redo"></i> ${translate("retry")}
           </button>
         `
             : ""
         }
         <button class="btn btn-outline-secondary" onclick="ErrorStates.hideErrorState()">
-          <i class="fas fa-times"></i> Cerrar
+          <i class="fas fa-times"></i> ${translate("close")}
         </button>
       </div>
     `;
@@ -292,11 +667,11 @@ const ErrorStates = {
     appContainer.classList.remove("d-none");
   },
 
-  showLoadingState: (message = "Cargando...") => {
+  showLoadingState: (message = translate("loading")) => {
     const loadingHtml = `
       <div class="loading-state text-center py-5">
         <div class="spinner-border text-primary mb-3" role="status">
-          <span class="visually-hidden">Cargando...</span>
+          <span class="visually-hidden">${translate("loading")}</span>
         </div>
         <p class="text-muted">${message}</p>
       </div>
@@ -322,7 +697,7 @@ const ErrorStates = {
   },
 };
 const LoadingManager = {
-  show: (message = "Cargando...") => {
+  show: (message = translate("loading")) => {
     ErrorStates.showLoadingState(message);
   },
 
@@ -331,7 +706,7 @@ const LoadingManager = {
   },
 
   // Para operaciones async con auto-loading
-  wrap: async (promise, message = "Procesando...") => {
+  wrap: async (promise, message = translate("processing")) => {
     LoadingManager.show(message);
     try {
       const result = await promise;
@@ -413,15 +788,19 @@ function showConfirmation(message, confirmCallback, cancelCallback = null) {
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Confirmación</h5>
+            <h5 class="modal-title">${translate("confirm")}</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
             <p id="confirmationMessage"></p>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" id="confirmCancelBtn">Cancelar</button>
-            <button type="button" class="btn btn-danger" id="confirmOkBtn">Aceptar</button>
+            <button type="button" class="btn btn-secondary" id="confirmCancelBtn">${translate(
+              "cancelButton"
+            )}</button>
+            <button type="button" class="btn btn-danger" id="confirmOkBtn">${translate(
+              "accept"
+            )}</button>
           </div>
         </div>
       </div>
@@ -496,7 +875,9 @@ auth.onAuthStateChanged(async (user) => {
 
   if (user) {
     currentUser = user;
-    userInfo.textContent = `Hola, ${user.displayName || user.email}`;
+    userInfo.textContent = `${translate("hello")}, ${
+      user.displayName || user.email
+    }`;
 
     // ✅ Ocultar login y mostrar app usando clases
     loginContainer.classList.add("d-none");
@@ -504,6 +885,9 @@ auth.onAuthStateChanged(async (user) => {
     appContainer.classList.add("d-block");
 
     console.log("Ocultando login, mostrando app");
+
+    // Set initial language from preferences
+    setLanguage(currentLang);
 
     // Cargar datos del usuario desde Firestore
     await loadUserData();
@@ -516,6 +900,8 @@ auth.onAuthStateChanged(async (user) => {
     appContainer.classList.add("d-none");
     appContainer.classList.remove("d-block");
 
+    // Set initial language for login page
+    setLanguage(currentLang);
     console.log("Mostrando login, ocultando app");
 
     // Limpiar datos al cerrar sesión
@@ -553,7 +939,7 @@ loginForm.addEventListener("submit", async (e) => {
 
   // Validar email
   if (!SecurityUtils.validateEmail(email)) {
-    showAuthAlert("Por favor, introduce un email válido", "danger");
+    showAuthAlert(translate("invalidEmail"), "danger");
     return;
   }
 
@@ -561,7 +947,7 @@ loginForm.addEventListener("submit", async (e) => {
 
   try {
     await auth.signInWithEmailAndPassword(email, password);
-    showAuthAlert("Inicio de sesión exitoso", "success");
+    showAuthAlert(translate("loginSuccess"), "success");
   } catch (error) {
     console.error("Error al iniciar sesión:", error);
     showAuthAlert(getAuthErrorMessage(error), "danger");
@@ -589,15 +975,12 @@ registerForm.addEventListener("submit", async (e) => {
   const confirmPassword = document.getElementById("confirm-password").value;
 
   if (password !== confirmPassword) {
-    showAuthAlert("Las contraseñas no coinciden", "danger");
+    showAuthAlert(translate("passwordsMismatch"), "danger");
     return;
   }
 
   if (!SecurityUtils.validatePassword(password)) {
-    showAuthAlert(
-      "La contraseña debe tener al menos 6 caracteres, incluyendo letras y números",
-      "danger"
-    );
+    showAuthAlert(translate("passwordRequirements"), "danger");
     return;
   }
 
@@ -614,7 +997,7 @@ registerForm.addEventListener("submit", async (e) => {
 
     // Crear estructura inicial de datos para el nuevo usuario
     await initializeUserData();
-    showAuthAlert("Cuenta creada exitosamente", "success");
+    showAuthAlert(translate("accountCreated"), "success");
   } catch (error) {
     console.error("Error al registrarse:", error);
     showAuthAlert(getAuthErrorMessage(error), "danger");
@@ -633,7 +1016,7 @@ googleLoginBtn.addEventListener("click", async () => {
     if (result.additionalUserInfo.isNewUser) {
       await initializeUserData();
     }
-    showAuthAlert("Inicio de sesión con Google exitoso", "success");
+    showAuthAlert(translate("googleLoginSuccess"), "success");
   } catch (error) {
     console.error("Error al iniciar sesión con Google:", error);
     showAuthAlert(getAuthErrorMessage(error), "danger");
@@ -674,20 +1057,7 @@ function showAuthAlert(message, type) {
 }
 
 function getAuthErrorMessage(error) {
-  switch (error.code) {
-    case "auth/user-not-found":
-      return "Usuario no encontrado";
-    case "auth/wrong-password":
-      return "Contraseña incorrecta";
-    case "auth/email-already-in-use":
-      return "El correo ya está en uso";
-    case "auth/weak-password":
-      return "La contraseña es demasiado débil";
-    case "auth/invalid-email":
-      return "Correo electrónico inválido";
-    default:
-      return error.message;
-  }
+  return translate(error.code) || error.message;
 }
 
 function resetAuthForms() {
@@ -731,7 +1101,7 @@ async function initializeUserData() {
 async function loadUserData() {
   if (!currentUser) return;
 
-  ErrorStates.showLoadingState("Cargando tus datos...");
+  ErrorStates.showLoadingState(translate("loadingData"));
 
   try {
     console.log("🔍 Cargando datos para usuario:", currentUser.uid);
@@ -750,10 +1120,7 @@ async function loadUserData() {
         currentSheet = sheets[0] || "";
       } else {
         console.warn("⚠️ Datos corruptos detectados. Reinicializando...");
-        showToast(
-          "Se detectaron datos inconsistentes. Reinicializando...",
-          "warning"
-        );
+        showToast(translate("inconsistentData"), "warning");
         await initializeUserData();
       }
 
@@ -774,10 +1141,7 @@ async function loadUserData() {
     currentSheet = "";
 
     // Mostrar error al usuario
-    showToast(
-      "Error al cargar los datos. Intenta recargar la página.",
-      "error"
-    );
+    showToast(translate("loadError"), "error");
   } finally {
     ErrorStates.hideLoadingState();
   }
@@ -801,7 +1165,7 @@ async function saveUserDataWithRetry(maxRetries = 3) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       if (attempt > 1 && !loadingShown) {
-        ErrorStates.showLoadingState("Sincronizando datos...");
+        ErrorStates.showLoadingState(translate("syncingData"));
         loadingShown = true;
       }
 
@@ -835,9 +1199,9 @@ async function saveUserDataWithRetry(maxRetries = 3) {
 
         // Mostrar error específico según el tipo
         if (error.code === "failed-precondition") {
-          throw new Error("Error de permisos. Verifica tu conexión.");
+          throw new Error(translate("permissionError"));
         } else if (error.code === "unavailable") {
-          throw new Error("Sin conexión. Los cambios se guardarán localmente.");
+          throw new Error(translate("offlineError"));
         } else {
           throw error;
         }
@@ -853,7 +1217,10 @@ async function saveUserDataWithRetry(maxRetries = 3) {
 }
 
 // Función auxiliar para operaciones con loading
-async function withGlobalLoading(operation, loadingMessage = "Procesando...") {
+async function withGlobalLoading(
+  operation,
+  loadingMessage = translate("processing")
+) {
   ErrorStates.showLoadingState(loadingMessage);
   try {
     const result = await operation();
@@ -941,25 +1308,22 @@ function changeSheet(sheet) {
 
 // ===== ELIMINAR HOJA =====
 async function deleteSheet(sheetName) {
-  showConfirmation(
-    `¿Estás seguro de eliminar la hoja "${sheetName}" y todos sus datos?`,
-    async () => {
-      sheets = sheets.filter((s) => s !== sheetName);
-      delete students[sheetName];
-      currentSheet = sheets[0] || "";
+  showConfirmation(translate("confirmDeleteSheet", sheetName), async () => {
+    sheets = sheets.filter((s) => s !== sheetName);
+    delete students[sheetName];
+    currentSheet = sheets[0] || "";
 
-      try {
-        await saveUserData();
-        renderSheets();
-        renderStudents(searchBox.value);
-        updateButtonsState();
-        showToast("Hoja eliminada correctamente", "success");
-      } catch (error) {
-        console.error("Error eliminando hoja:", error);
-        showToast("Error al eliminar la hoja", "error");
-      }
+    try {
+      await saveUserData();
+      renderSheets();
+      renderStudents(searchBox.value);
+      updateButtonsState();
+      showToast(translate("sheetDeleted"), "success");
+    } catch (error) {
+      console.error("Error eliminando hoja:", error);
+      showToast(translate("sheetDeleteError"), "error");
     }
-  );
+  });
 }
 
 // ===== CALCULAR DÍAS DE CLASE =====
@@ -990,10 +1354,10 @@ function renderStudents(filter = "") {
         <td colspan="7" class="text-center py-5">
           <div class="empty-state">
             <div>
-              <h3 class="text-muted">📄 No hay hoja seleccionada</h3>
-              <p class="text-muted">Crea una nueva hoja para comenzar</p>
+              <h3 class="text-muted">${translate("noSheetSelected")}</h3>
+              <p class="text-muted">${translate("noSheetSelectedBody")}</p>
               <button class="btn btn-primary" onclick="document.getElementById('newSheet').click()">
-                <i class="fas fa-plus"></i> Crear Primera Hoja
+                <i class="fas fa-plus"></i> ${translate("createFirstSheet")}
               </button>
             </div>
           </div>
@@ -1015,10 +1379,10 @@ function renderStudents(filter = "") {
         <td colspan="7" class="text-center py-5">
           <div class="empty-state">
             <div>
-              <h3 class="text-muted">👥 No hay estudiantes</h3>
-              <p class="text-muted">Añade estudiantes a esta hoja</p>
+              <h3 class="text-muted">${translate("noStudents")}</h3>
+              <p class="text-muted">${translate("noStudentsBody")}</p>
               <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#studentModal">
-                <i class="fas fa-plus"></i> Añadir Primer Estudiante
+                <i class="fas fa-plus"></i> ${translate("addFirstStudent")}
               </button>
             </div>
           </div>
@@ -1094,30 +1458,38 @@ function renderStudents(filter = "") {
         // Crear contenido de notas con funcionalidad de gráfico
         const notasContent =
           st.notas.length > 0
-            ? `<div style="cursor: pointer;" onclick="showStudentNotesChart(${idx})" title="Haz clic para ver gráfico de notas">
+            ? `<div style="cursor: pointer;" onclick="showStudentNotesChart(${idx})" title="${translate(
+                "notesChartClickTitle"
+              )}">
                <div class="d-flex align-items-center justify-content-center">
                  <span>${st.notas.join(", ")}</span>
                  <i class="fas fa-chart-line text-primary ms-2"></i>
                </div>
              </div>`
-            : "Sin notas";
+            : translate("noNotes");
 
         tr.innerHTML = `
         <td>${st.nombre}</td>
         <td>${notasContent}</td>
         <td><strong>${media || "-"}</strong></td>
         <td>${faltas} ${
-          faltasJustificadas > 0 ? `(${faltasJustificadas} just.)` : ""
+          faltasJustificadas > 0
+            ? translate("justifiedAbsences", faltasJustificadas)
+            : ""
         }</td>
         <td>${retrasos}</td>
         <td><span class="badge ${
           porcentajeFaltasAlumno > 20 ? "bg-danger" : "bg-warning"
         }">${porcentajeFaltasAlumno}%</span></td>
         <td>
-          <button class="btn btn-sm btn-primary me-1" onclick="editStudent(${idx})" title="Editar">
+          <button class="btn btn-sm btn-primary me-1" onclick="editStudent(${idx})" title="${translate(
+          "editButtonTitle"
+        )}">
             <i class="fas fa-edit"></i>
           </button>
-          <button class="btn btn-sm btn-danger" onclick="deleteStudent(${idx})" title="Eliminar">
+          <button class="btn btn-sm btn-danger" onclick="deleteStudent(${idx})" title="${translate(
+          "deleteButtonTitle"
+        )}">
             <i class="fas fa-trash"></i>
           </button>
         </td>
@@ -1146,8 +1518,10 @@ function renderStudents(filter = "") {
     updateStudentSelect();
   } catch (error) {
     console.error("Error renderizando estudiantes:", error);
-    showToast("Error al mostrar los estudiantes", "error");
-    tableBody.innerHTML = `<tr><td colspan="7">Error cargando datos</td></tr>`;
+    showToast(translate("renderError"), "error");
+    tableBody.innerHTML = `<tr><td colspan="7">${translate(
+      "renderErrorBody"
+    )}</td></tr>`;
   }
 }
 
@@ -1157,27 +1531,7 @@ function updateStudentSelect() {
   if (!currentSheet) return;
 
   const optionDefault = document.createElement("option");
-  optionDefault.textContent = "Selecciona un estudiante";
-  optionDefault.value = "";
-  optionDefault.disabled = true;
-  optionDefault.selected = true;
-  studentSelect.appendChild(optionDefault);
-
-  (students[currentSheet] || []).forEach((st, idx) => {
-    const opt = document.createElement("option");
-    opt.value = idx;
-    opt.textContent = st.nombre;
-    studentSelect.appendChild(opt);
-  });
-}
-
-// ===== ACTUALIZAR SELECT DE ESTUDIANTES =====
-function updateStudentSelect() {
-  studentSelect.innerHTML = "";
-  if (!currentSheet) return;
-
-  const optionDefault = document.createElement("option");
-  optionDefault.textContent = "Selecciona un estudiante";
+  optionDefault.textContent = translate("selectStudent");
   optionDefault.value = "";
   optionDefault.disabled = true;
   optionDefault.selected = true;
@@ -1194,10 +1548,7 @@ function updateStudentSelect() {
 // ===== AÑADIR ESTUDIANTE - VERSIÓN SEGURA =====
 document.getElementById("saveStudent").onclick = async () => {
   if (!currentSheet) {
-    showToast(
-      "Debes crear o seleccionar una hoja antes de añadir estudiantes.",
-      "warning"
-    );
+    showToast(translate("addStudentSheetWarning"), "warning");
     return;
   }
 
@@ -1205,7 +1556,7 @@ document.getElementById("saveStudent").onclick = async () => {
   const nombre = SecurityUtils.sanitizeStudentName(rawName);
 
   if (!nombre) {
-    showToast("El nombre no puede estar vacío", "error");
+    showToast(translate("studentNameEmpty"), "error");
     return;
   }
 
@@ -1215,7 +1566,7 @@ document.getElementById("saveStudent").onclick = async () => {
   );
 
   if (isDuplicate) {
-    showToast("Ya existe un estudiante con ese nombre", "error");
+    showToast(translate("studentNameDuplicate"), "error");
     return;
   }
 
@@ -1230,14 +1581,17 @@ document.getElementById("saveStudent").onclick = async () => {
     renderStudents(searchBox.value);
     bootstrap.Modal.getInstance(document.getElementById("studentModal")).hide();
     document.getElementById("nameInput").value = "";
-    showToast("Estudiante añadido correctamente", "success");
+    showToast(translate("studentAdded"), "success");
   } catch (error) {
     console.error("Error guardando estudiante:", error);
-    if (error.message.includes("Sin conexión")) {
-      showToast("⚠️ Estudiante guardado localmente (sin conexión)", "warning");
+    if (
+      error.message.includes("Sin conexión") ||
+      error.message.includes("No connection")
+    ) {
+      showToast(translate("studentSavedLocally"), "warning");
       // Los datos están en memoria, se sincronizarán cuando haya conexión
     } else {
-      showToast("Error al guardar el estudiante: " + error.message, "error");
+      showToast(translate("studentSaveError", error.message), "error");
     }
   }
 };
@@ -1245,10 +1599,7 @@ document.getElementById("saveStudent").onclick = async () => {
 // ===== AÑADIR NOTA =====
 document.getElementById("saveNote").onclick = async () => {
   if (!currentSheet) {
-    showToast(
-      "Debes crear o seleccionar una hoja antes de añadir notas.",
-      "warning"
-    );
+    showToast(translate("addNoteSheetWarning"), "warning");
     return;
   }
 
@@ -1256,12 +1607,12 @@ document.getElementById("saveNote").onclick = async () => {
   const notaInput = document.getElementById("noteInput").value;
 
   if (idx === "") {
-    showToast("Selecciona un estudiante", "error");
+    showToast(translate("selectStudent"), "error");
     return;
   }
 
   if (!SecurityUtils.validateNote(notaInput)) {
-    showToast("La nota debe ser un número entre 0 y 10", "error");
+    showToast(translate("invalidNote"), "error");
     return;
   }
 
@@ -1273,10 +1624,10 @@ document.getElementById("saveNote").onclick = async () => {
     renderStudents(searchBox.value);
     bootstrap.Modal.getInstance(document.getElementById("noteModal")).hide();
     document.getElementById("noteInput").value = "";
-    showToast("Nota añadida correctamente", "success");
+    showToast(translate("noteAdded"), "success");
   } catch (error) {
     console.error("Error guardando nota:", error);
-    showToast("Error al guardar la nota", "error");
+    showToast(translate("noteSaveError"), "error");
   }
 };
 
@@ -1285,21 +1636,18 @@ async function deleteStudent(idx) {
   if (!currentSheet) return;
 
   const studentName = students[currentSheet][idx].nombre;
-  showConfirmation(
-    `¿Estás seguro de eliminar al estudiante "${studentName}"?`,
-    async () => {
-      students[currentSheet].splice(idx, 1);
+  showConfirmation(translate("confirmDeleteStudent", studentName), async () => {
+    students[currentSheet].splice(idx, 1);
 
-      try {
-        await saveUserData();
-        renderStudents(searchBox.value);
-        showToast("Estudiante eliminado correctamente", "success");
-      } catch (error) {
-        console.error("Error eliminando estudiante:", error);
-        showToast("Error al eliminar el estudiante", "error");
-      }
+    try {
+      await saveUserData();
+      renderStudents(searchBox.value);
+      showToast(translate("studentDeleted"), "success");
+    } catch (error) {
+      console.error("Error eliminando estudiante:", error);
+      showToast(translate("studentDeleteError"), "error");
     }
-  );
+  });
 }
 
 // ===== BUSCAR =====
@@ -1318,16 +1666,22 @@ document.getElementById("newSheet").onclick = async () => {
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Nueva Hoja</h5>
+            <h5 class="modal-title">${translate("newSheetModalTitle")}</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <input type="text" id="newSheetName" class="form-control" placeholder="Nombre de la nueva hoja" maxlength="50">
+            <input type="text" id="newSheetName" class="form-control" placeholder="${translate(
+              "newSheetPlaceholder"
+            )}" maxlength="50">
             <div class="invalid-feedback" id="sheetNameError"></div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="button" class="btn btn-primary" id="createSheetBtn">Crear</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${translate(
+              "cancelButton"
+            )}</button>
+            <button type="button" class="btn btn-primary" id="createSheetBtn">${translate(
+              "createAccountButton"
+            )}</button>
           </div>
         </div>
       </div>
@@ -1349,14 +1703,14 @@ document.getElementById("newSheet").onclick = async () => {
     if (!name) {
       document.getElementById("newSheetName").classList.add("is-invalid");
       document.getElementById("sheetNameError").textContent =
-        "El nombre no puede estar vacío";
+        translate("sheetNameEmpty");
       return;
     }
 
     if (sheets.includes(name)) {
       document.getElementById("newSheetName").classList.add("is-invalid");
       document.getElementById("sheetNameError").textContent =
-        "Ya existe una hoja con ese nombre";
+        translate("sheetNameExists");
       return;
     }
 
@@ -1368,10 +1722,10 @@ document.getElementById("newSheet").onclick = async () => {
     try {
       await saveUserData();
       changeSheet(name);
-      showToast("Hoja creada correctamente", "success");
+      showToast(translate("sheetCreated"), "success");
     } catch (error) {
       console.error("Error creando hoja:", error);
-      showToast("Error al crear la hoja", "error");
+      showToast(translate("sheetCreateError"), "error");
     }
   };
 
@@ -1391,9 +1745,7 @@ function checkExistingAttendance(date) {
 // Función para abrir el modal de asistencia
 attendanceBtn.onclick = () => {
   if (!currentSheet) {
-    alert(
-      "⚠️ Debes crear o seleccionar una hoja antes de registrar asistencia."
-    );
+    alert(translate("attendanceSheetWarning"));
     return;
   }
 
@@ -1480,7 +1832,7 @@ function showDateWarning(show) {
   if (show) {
     warningElement.innerHTML = `
       <i class="fas fa-exclamation-triangle"></i>
-      Ya existe asistencia registrada para esta fecha. Al guardar, se actualizarán los registros existentes.
+      ${translate("attendanceDateWarning")}
     `;
     warningElement.classList.remove("d-none");
   } else {
@@ -1494,13 +1846,13 @@ document.getElementById("saveAttendance").onclick = async () => {
 
   const fecha = document.getElementById("attendanceDate").value;
   if (!fecha) {
-    showToast("Por favor, selecciona una fecha.", "error");
+    showToast(translate("selectDate"), "error");
     return;
   }
 
   // Validar fecha
   if (!SecurityUtils.validateDate(fecha)) {
-    showToast("La fecha seleccionada no es válida", "error");
+    showToast(translate("invalidDate"), "error");
     return;
   }
 
@@ -1531,16 +1883,16 @@ document.getElementById("saveAttendance").onclick = async () => {
       bootstrap.Modal.getInstance(
         document.getElementById("attendanceModal")
       ).hide();
-      showToast("Asistencia guardada correctamente", "success");
+      showToast(translate("attendanceSaved"), "success");
     } catch (error) {
       console.error("Error guardando asistencia:", error);
-      showToast("Error al guardar la asistencia", "error");
+      showToast(translate("attendanceSaveError"), "error");
     }
   } else {
     bootstrap.Modal.getInstance(
       document.getElementById("attendanceModal")
     ).hide();
-    showToast("No se realizaron cambios en la asistencia", "info");
+    showToast(translate("noAttendanceChanges"), "info");
   }
 };
 
@@ -1587,7 +1939,7 @@ function addNoteField(value = "", index = null) {
   noteDiv.innerHTML = `
     <input type="number" class="form-control note-input" 
            value="${value}" step="0.01" min="0" max="10" 
-           placeholder="Nota (0-10)" data-index="${noteId}">
+           placeholder="${translate("notePlaceholder")}" data-index="${noteId}">
     <button class="btn btn-outline-danger" type="button" onclick="removeNoteField(this)">
       <i class="fas fa-trash"></i>
     </button>
@@ -1612,16 +1964,16 @@ function addAttendanceField(fecha, status = "asistio") {
       <select class="form-select attendance-status" data-date="${fecha}">
         <option value="asistio" ${
           status === "asistio" ? "selected" : ""
-        }>Asistió</option>
+        }>${translate("attendedOption")}</option>
         <option value="falta" ${
           status === "falta" ? "selected" : ""
-        }>Falta</option>
+        }>${translate("absentOption")}</option>
         <option value="falta-justificada" ${
           status === "falta-justificada" ? "selected" : ""
-        }>Falta Justificada</option>
+        }>${translate("justifiedAbsentOption")}</option>
         <option value="retraso" ${
           status === "retraso" ? "selected" : ""
-        }>Retraso</option>
+        }>${translate("tardyOption")}</option>
       </select>
     </div>
     <div class="col-md-2">
@@ -1653,7 +2005,7 @@ document.getElementById("saveEditStudent").onclick = async () => {
   const newName = SecurityUtils.sanitizeStudentName(rawName);
 
   if (!newName) {
-    showToast("El nombre no puede estar vacío", "error");
+    showToast(translate("studentNameEmpty"), "error");
     return;
   }
 
@@ -1672,7 +2024,7 @@ document.getElementById("saveEditStudent").onclick = async () => {
   });
 
   if (hasInvalidNote) {
-    showToast("Algunas notas no eran válidas y fueron ignoradas", "warning");
+    showToast(translate("invalidNotesIgnored"), "warning");
   }
 
   // Actualizar asistencia
@@ -1698,10 +2050,10 @@ document.getElementById("saveEditStudent").onclick = async () => {
       document.getElementById("editStudentModal")
     ).hide();
     editingStudentIndex = -1;
-    showToast("Estudiante actualizado correctamente", "success");
+    showToast(translate("studentUpdated"), "success");
   } catch (error) {
     console.error("Error guardando cambios:", error);
-    showToast("Error al guardar los cambios", "error");
+    showToast(translate("studentUpdateError"), "error");
   }
 };
 
@@ -1714,14 +2066,15 @@ function showStudentNotesChart(studentIndex) {
   const student = students[currentSheet][studentIndex];
 
   if (!student.notas || student.notas.length === 0) {
-    showToast("Este estudiante no tiene notas para mostrar", "info");
+    showToast(translate("noNotesForChart"), "info");
     return;
   }
 
   // Actualizar título del modal
-  document.getElementById(
-    "chartModalTitle"
-  ).textContent = `Evolución de Notas - ${student.nombre}`;
+  document.getElementById("chartModalTitle").textContent = translate(
+    "chartTitle",
+    student.nombre
+  );
 
   // Calcular estadísticas
   const average =
@@ -1745,7 +2098,7 @@ function showStudentNotesChart(studentIndex) {
 }
 
 function calculateTrend(notes) {
-  if (notes.length < 2) return "Insuficientes datos";
+  if (notes.length < 2) return translate("chartTrendInsufficient");
 
   const firstHalf = notes.slice(0, Math.ceil(notes.length / 2));
   const secondHalf = notes.slice(Math.ceil(notes.length / 2));
@@ -1755,9 +2108,9 @@ function calculateTrend(notes) {
 
   const difference = avgSecond - avgFirst;
 
-  if (difference > 0.5) return "📈 Mejorando";
-  if (difference < -0.5) return "📉 Bajando";
-  return "➡️ Estable";
+  if (difference > 0.5) return translate("chartTrendImproving");
+  if (difference < -0.5) return translate("chartTrendWorsening");
+  return translate("chartTrendStable");
 }
 
 function renderNotesChart(notes, studentName) {
@@ -1769,7 +2122,9 @@ function renderNotesChart(notes, studentName) {
   }
 
   // Preparar datos
-  const labels = notes.map((_, index) => `Nota ${index + 1}`);
+  const labels = notes.map(
+    (_, index) => `${translate("chartLabelNote")} ${index + 1}`
+  );
   const data = notes;
 
   // Calcular línea de tendencia
@@ -1781,7 +2136,7 @@ function renderNotesChart(notes, studentName) {
       labels: labels,
       datasets: [
         {
-          label: "Notas",
+          label: translate("tableHeaderNotes"),
           data: data,
           borderColor: "#007bff",
           backgroundColor: "rgba(0, 123, 255, 0.1)",
@@ -1795,7 +2150,7 @@ function renderNotesChart(notes, studentName) {
           pointHoverRadius: 8,
         },
         {
-          label: "Tendencia",
+          label: translate("chartLabelTrend"),
           data: trendLine,
           borderColor: "#dc3545",
           borderWidth: 2,
@@ -1834,7 +2189,9 @@ function renderNotesChart(notes, studentName) {
         tooltip: {
           callbacks: {
             label: function (context) {
-              return `Nota: ${context.parsed.y.toFixed(2)}`;
+              return `${translate(
+                "chartLabelNote"
+              )}: ${context.parsed.y.toFixed(2)}`;
             },
           },
         },
@@ -1883,5 +2240,11 @@ document.getElementById("themeToggle").onclick = () => {
 
 // ===== INTERNACIONALIZACIÓN =====
 document.getElementById("langToggle").onclick = () => {
-  alert("Funcionalidad de cambio de idioma por implementar");
+  const newLang = currentLang === "es" ? "en" : "es";
+  setLanguage(newLang);
 };
+
+// Set initial language on first load
+document.addEventListener("DOMContentLoaded", () => {
+  setLanguage(currentLang);
+});
