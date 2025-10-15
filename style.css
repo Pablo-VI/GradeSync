@@ -120,10 +120,6 @@
   background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-.dark-theme #studentsTable tbody tr td:nth-child(2):hover {
-  background-color: rgba(66, 153, 225, 0.2) !important;
-}
-
 .dark-theme #studentsTable thead.sticky-top th {
   border-bottom: 2px solid var(--hover-bg) !important;
 }
@@ -146,30 +142,29 @@
   color: rgba(255, 255, 255, 0.8) !important;
 }
 
-/* ===== FONDO PERSONALIZADO PARA CELDAS SIN NOTAS (MODO OSCURO) - SOLUCIÓN FINAL ===== */
+/* ===== FONDO PERSONALIZADO PARA CELDAS SIN NOTAS (MODO OSCURO) ===== */
 
-/*
-  1. Aplicamos el color de fondo directamente a las CELDAS (td) de las filas
-     que no tengan un color de semáforo. Esto es más robusto.
-*/
 .dark-theme
   #studentsTable
   tbody
   tr:not(.tr-rojo):not(.tr-amarillo):not(.tr-verde)
   td {
   background-color: var(--surface-bg) !important;
+  color: var(--main-text) !important;
 }
 
-/*
-  2. Actualizamos la regla :hover para que se aplique también a las celdas
-     y el efecto visual al pasar el ratón sea consistente.
-*/
 .dark-theme
   #studentsTable.table-hover
   > tbody
   > tr:not(.tr-rojo):not(.tr-amarillo):not(.tr-verde):hover
   td {
   background-color: var(--hover-bg) !important;
+}
+
+/* ===== ESTILOS PARA TABLA DE ASISTENCIA EN MODAL (MODO OSCURO) ===== */
+.dark-theme #attendanceTable tbody td {
+  background-color: var(--surface-bg) !important;
+  color: var(--main-text) !important;
 }
 
 /* ===== CONTENEDOR DE LOGIN ===== */
@@ -643,8 +638,15 @@ thead.sticky-top th {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-.table tbody tr td:nth-child(2):hover {
+/* ===== ESTILO HOVER PARA CELDA DE NOTAS (SOLO TABLA PRINCIPAL) ===== */
+/* Efecto hover para el tema claro en la tabla de estudiantes */
+#studentsTable tbody tr td:nth-child(2):hover {
   background-color: rgba(0, 123, 255, 0.1) !important;
+}
+
+/* Efecto hover para el tema oscuro en la tabla de estudiantes */
+.dark-theme #studentsTable tbody tr td:nth-child(2):hover {
+  background-color: rgba(66, 153, 225, 0.2) !important;
 }
 
 /* Estadísticas del gráfico */
