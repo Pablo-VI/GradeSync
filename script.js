@@ -402,9 +402,9 @@ const SecurityUtils = {
     // Eliminar caracteres especiales pero permitir acentos y espacios
     const sanitized = name
       .trim()
-      .replace(/[<>'"&\\/]/g, "") // Eliminar caracteres peligrosos
-      .replace(/\s+/g, " ") // Normalizar espacios múltiples
-      .substring(0, 100); // Limitar longitud
+      .replace(/[<>'"&\\/]/g, "")
+      .replace(/\s+/g, " ")
+      .substring(0, 100);
 
     // Validar que no sea solo espacios
     return sanitized.trim() === "" ? "" : sanitized;
