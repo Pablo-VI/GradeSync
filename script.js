@@ -9,6 +9,33 @@ let sortState = {
   column: "nombre",
   direction: "asc", // 'asc' o 'desc'
 };
+
+// ===== GESTOR DE ERRORES GLOBAL =====
+window.addEventListener("error", function (event) {
+  ErrorStates.showErrorState(
+    "Ha ocurrido un error inesperado en la aplicación."
+  );
+});
+
+window.addEventListener("unhandledrejection", function (event) {
+  ErrorStates.showErrorState(
+    "Ha ocurrido un error inesperado en una operación asíncrona."
+  );
+});
+
+// ===== MANEJAR ERRORES DE GUARDADO =====
+function handleFirestoreError(error, operationType) {
+  console.error(`Error durante la operación (${operationType}):`, error);
+  if (
+    error.message.includes("offline") ||
+    error.message.includes("NETWORK_ERROR")
+  ) {
+    showToast(translate("studentSavedLocally"), "warning");
+  } else {
+    showToast(translate("studentSaveError", error.message), "error");
+  }
+}
+
 // ===== I18N - INTERNACIONALIZACIÓN =====
 let currentLang = localStorage.getItem("language") || "es";
 
@@ -1189,7 +1216,7 @@ async function saveUserDataWithRetry(maxRetries = 3) {
         .set(userData, { merge: true });
 
       console.log("✅ Datos guardados exitosamente");
-      return; // Éxito - salir de la función
+      return;
     } catch (error) {
       console.error(`❌ Error en intento ${attempt}:`, error);
 
