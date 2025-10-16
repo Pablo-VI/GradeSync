@@ -409,7 +409,8 @@ function setLanguage(lang) {
     renderStudents(searchBox.value);
     updateStudentSelect();
   }
-  console.log(`Language changed to ${lang}`);
+  /*   console.log(`Language changed to ${lang}`);
+   */
 }
 // ===== UTILIDADES DE SEGURIDAD =====
 const SecurityUtils = {
@@ -453,6 +454,14 @@ const SecurityUtils = {
     return date instanceof Date && !isNaN(date) && date <= new Date();
   },
 };
+
+// ===== MEJORA DE ACCESIBILIDAD PARA MODALES =====
+document.addEventListener("hide.bs.modal", function () {
+  // Si hay un elemento con foco en el documento, se lo quitamos (blur).
+  if (document.activeElement) {
+    document.activeElement.blur();
+  }
+});
 
 // ===== SISTEMA DE ORDENACIÓN MEJORADO =====
 function initSorting() {
@@ -895,10 +904,10 @@ const actionButtons = [studentBtn, noteBtn, attendanceBtn];
 
 // Observador de estado de autenticación - VERSIÓN CORREGIDA
 auth.onAuthStateChanged(async (user) => {
-  console.log(
+  /* console.log(
     "Estado de autenticación cambiado:",
     user ? "Usuario logueado" : "Usuario no logueado"
-  );
+  ); */
 
   if (user) {
     currentUser = user;
@@ -906,13 +915,13 @@ auth.onAuthStateChanged(async (user) => {
       user.displayName || user.email
     }`;
 
-    // ✅ Ocultar login y mostrar app usando clases
+    // Ocultar login y mostrar app usando clases
     loginContainer.classList.add("d-none");
     appContainer.classList.remove("d-none");
     appContainer.classList.add("d-block");
 
-    console.log("Ocultando login, mostrando app");
-
+    /*     console.log("Ocultando login, mostrando app");
+     */
     // Set initial language from preferences
     setLanguage(currentLang);
 
@@ -929,8 +938,8 @@ auth.onAuthStateChanged(async (user) => {
 
     // Set initial language for login page
     setLanguage(currentLang);
-    console.log("Mostrando login, ocultando app");
-
+    /*     console.log("Mostrando login, ocultando app");
+     */
     // Limpiar datos al cerrar sesión
     resetAppData();
     resetAuthForms();
@@ -1131,14 +1140,14 @@ async function loadUserData() {
   ErrorStates.showLoadingState(translate("loadingData"));
 
   try {
-    console.log("🔍 Cargando datos para usuario:", currentUser.uid);
-
+    /*     console.log("🔍 Cargando datos para usuario:", currentUser.uid);
+     */
     const userDoc = await db.collection("users").doc(currentUser.uid).get();
 
     if (userDoc.exists) {
       const data = userDoc.data();
-      console.log("✅ Datos cargados exitosamente");
-
+      /*       console.log("✅ Datos cargados exitosamente");
+       */
       // VALIDAR ESQUEMA DE DATOS
       if (DataValidation.validateUserData(data)) {
         students = data.students || {};
@@ -1154,8 +1163,8 @@ async function loadUserData() {
       // Inicializar la aplicación
       initApp();
     } else {
-      console.log("🆕 Creando datos iniciales para nuevo usuario");
-      await initializeUserData();
+      /*       console.log("🆕 Creando datos iniciales para nuevo usuario");
+       */ await initializeUserData();
       initApp();
     }
   } catch (error) {
@@ -1215,8 +1224,8 @@ async function saveUserDataWithRetry(maxRetries = 3) {
         .doc(currentUser.uid)
         .set(userData, { merge: true });
 
-      console.log("✅ Datos guardados exitosamente");
-      return;
+      /*       console.log("✅ Datos guardados exitosamente");
+       */ return;
     } catch (error) {
       console.error(`❌ Error en intento ${attempt}:`, error);
 
@@ -1235,7 +1244,8 @@ async function saveUserDataWithRetry(maxRetries = 3) {
       }
 
       // Si no es el último intento, continuar al siguiente
-      console.log(`🔄 Reintentando en ${attempt} segundos...`);
+      /*       console.log(`🔄 Reintentando en ${attempt} segundos...`);
+       */
     }
   }
   if (loadingShown) {
