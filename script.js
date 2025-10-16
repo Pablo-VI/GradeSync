@@ -139,8 +139,6 @@ const translations = {
     langChangeNotImplemented:
       "Funcionalidad de cambio de idioma por implementar",
     // Static HTML text keys (from data-lang attributes)
-    appTitle: "Sistema de Gestión de Estudiantes",
-    appTitleHeader: "📚 Gestión de Estudiantes",
     loginSubtitle: "Inicia sesión en tu cuenta",
     emailLabel: "Correo electrónico",
     passwordLabel: "Contraseña",
@@ -301,8 +299,6 @@ const translations = {
     // Misc
     langChangeNotImplemented: "Language change functionality to be implemented",
     // Static HTML text keys (from data-lang attributes)
-    appTitle: "Student Management System",
-    appTitleHeader: "📚 Student Management",
     loginSubtitle: "Log in to your account",
     emailLabel: "Email address",
     passwordLabel: "Password",
