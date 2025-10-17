@@ -2,110 +2,376 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <title>Sistema de Gestión de Estudiantes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="GradeSync: La herramienta definitiva para profesores. Gestiona estudiantes, notas y asistencia de forma fácil e intuitiva."
+    />
+
+    <meta property="og:title" content="GradeSync" />
+    <meta
+      property="og:description"
+      content="Gestiona tus clases de forma fácil e intuitiva."
+    />
+    <meta property="og:image" content="/assets/icon.svg" />
+    <meta property="og:url" content="https://pablo-vi.github.io/GradeSync" />
+    <title>GradeSync</title>
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
-    <link href="styles.css" rel="stylesheet" />
+    <link href="style.css" rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <link rel="icon" href="assets/icon.svg" />
+    <link rel="apple-touch-icon" href="assets/icon.png" />
+    <style>
+      #app {
+        display: none;
+      }
+      #login-container {
+        display: flex;
+      }
+    </style>
   </head>
   <body class="d-flex flex-column min-vh-100">
-    <!-- HEADER -->
-    <header
-      class="bg-dark text-white py-3 px-4 d-flex justify-content-between align-items-center"
-    >
-      <h2 class="m-0">📚 Gestión de Estudiantes</h2>
-      <div class="d-flex gap-3 align-items-center">
-        <button id="themeToggle" class="btn btn-sm btn-outline-light">
-          🌙/☀️
-        </button>
-        <button id="langToggle" class="btn btn-sm btn-outline-light">
-          ES/EN
-        </button>
+    <div id="login-container" class="login-container">
+      <div class="card shadow-lg" style="width: 400px">
+        <div class="card-body p-4">
+          <div class="text-center mb-4">
+            <div class="d-flex justify-content-center align-items-center mb-3">
+              <img
+                src="assets/icon.svg"
+                alt="GradeSync Logo"
+                height="70"
+                class="me-2"
+              />
+              <h3
+                class="card-title text-primary m-0"
+                data-lang="appTitleHeader"
+              >
+                GradeSync
+              </h3>
+            </div>
+
+            <p class="text-muted" data-lang="loginSubtitle">
+              Inicia sesión en tu cuenta
+            </p>
+          </div>
+
+          <form id="login-form">
+            <div class="mb-3">
+              <label for="login-email" class="form-label" data-lang="emailLabel"
+                >Correo electrónico</label
+              >
+              <input
+                type="email"
+                class="form-control"
+                id="login-email"
+                required
+                data-lang-placeholder="emailPlaceholder"
+                placeholder="usuario@ejemplo.com"
+              />
+            </div>
+            <div class="mb-3">
+              <label
+                for="login-password"
+                class="form-label"
+                data-lang="passwordLabel"
+                >Contraseña</label
+              >
+              <input
+                type="password"
+                class="form-control"
+                id="login-password"
+                required
+                data-lang-placeholder="passwordPlaceholder"
+                placeholder="••••••••"
+              />
+            </div>
+            <div class="d-grid gap-2 mb-3">
+              <button
+                type="submit"
+                class="btn btn-primary"
+                id="login-submit-btn"
+              >
+                <span id="login-text" data-lang="loginButton"
+                  >Iniciar Sesión</span
+                >
+                <div
+                  id="login-spinner"
+                  class="spinner-border spinner-border-sm d-none"
+                  role="status"
+                ></div>
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                id="register-btn"
+                data-lang="createAccountButton"
+              >
+                Crear Nueva Cuenta
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-danger"
+                id="google-login-btn"
+              >
+                <i class="fab fa-google"></i>
+                <span data-lang="googleLoginButton">Continuar con Google</span>
+              </button>
+            </div>
+          </form>
+
+          <div id="register-container" class="d-none">
+            <h5 class="text-center mb-3" data-lang="createAccountTitle">
+              Crear Nueva Cuenta
+            </h5>
+            <form id="register-form">
+              <div class="mb-3">
+                <label
+                  for="register-name"
+                  class="form-label"
+                  data-lang="fullNameLabel"
+                  >Nombre completo</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="register-name"
+                  required
+                  data-lang-placeholder="fullNamePlaceholder"
+                  placeholder="Tu nombre completo"
+                />
+              </div>
+              <div class="mb-3">
+                <label
+                  for="register-email"
+                  class="form-label"
+                  data-lang="emailLabel"
+                  >Correo electrónico</label
+                >
+                <input
+                  type="email"
+                  class="form-control"
+                  id="register-email"
+                  required
+                  data-lang-placeholder="emailPlaceholder"
+                  placeholder="usuario@ejemplo.com"
+                />
+              </div>
+              <div class="mb-3">
+                <label
+                  for="register-password"
+                  class="form-label"
+                  data-lang="passwordLabel"
+                  >Contraseña</label
+                >
+                <input
+                  type="password"
+                  class="form-control"
+                  id="register-password"
+                  required
+                  minlength="6"
+                  data-lang-placeholder="passwordMinLengthPlaceholder"
+                  placeholder="Mínimo 6 caracteres"
+                />
+              </div>
+              <div class="mb-3">
+                <label
+                  for="confirm-password"
+                  class="form-label"
+                  data-lang="confirmPasswordLabel"
+                  >Confirmar contraseña</label
+                >
+                <input
+                  type="password"
+                  class="form-control"
+                  id="confirm-password"
+                  required
+                  data-lang-placeholder="confirmPasswordPlaceholder"
+                  placeholder="Repite tu contraseña"
+                />
+              </div>
+              <div class="d-grid gap-2 mb-3">
+                <button
+                  type="submit"
+                  class="btn btn-success"
+                  id="register-submit-btn"
+                >
+                  <span id="register-text" data-lang="createAccountButton"
+                    >Crear Cuenta</span
+                  >
+                  <div
+                    id="register-spinner"
+                    class="spinner-border spinner-border-sm d-none"
+                    role="status"
+                  ></div>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  id="back-to-login"
+                  data-lang="backToLoginButton"
+                >
+                  Volver al inicio de sesión
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div id="auth-alerts"></div>
+        </div>
       </div>
-      <button
-        class="btn btn-primary"
-        data-bs-toggle="modal"
-        data-bs-target="#studentModal"
+    </div>
+
+    <div id="app" class="d-none w-100">
+      <header
+        class="bg-dark text-white py-2 px-4 d-flex justify-content-between align-items-center"
       >
-        ➕ Añadir Estudiante
-      </button>
-    </header>
-
-    <!-- CONTENIDO -->
-    <main class="container my-4 flex-grow-1">
-      <!-- Controles -->
-      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex align-items-center">
+          <img
+            src="assets/icon.svg"
+            alt="GradeSync Logo"
+            height="60"
+            class="me-3"
+          />
+          <h2 class="m-0">GradeSync</h2>
+        </div>
+        <div class="d-flex gap-3 align-items-center">
+          <span id="user-info" class="text-light me-2 d-md-inline"></span>
+          <button id="themeToggle" class="btn btn-sm btn-outline-light">
+            <i class="fas fa-moon"></i>
+            <span data-lang="themeButton">Tema</span>
+          </button>
+          <button id="langToggle" class="btn btn-sm btn-outline-light">
+            <i class="fas fa-language"></i>
+            <span>ES/EN</span>
+          </button>
+          <button id="logout-btn" class="btn btn-sm btn-outline-light">
+            <i class="fas fa-sign-out-alt"></i>
+            <span data-lang="logoutButton">Salir</span>
+          </button>
+        </div>
         <button
-          class="btn btn-success"
+          class="btn btn-primary"
           data-bs-toggle="modal"
-          data-bs-target="#noteModal"
+          data-bs-target="#studentModal"
         >
-          ➕ Añadir Nota
+          <i class="fas fa-plus"></i>
+          <span data-lang="addStudentButton">Añadir Estudiante</span>
         </button>
-        <button
-          class="btn btn-warning"
-          data-bs-toggle="modal"
-          data-bs-target="#attendanceModal"
+      </header>
+
+      <main class="container my-4 flex-grow-1">
+        <div
+          class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2"
         >
-          📌 Asistencia
-        </button>
-        <button class="btn btn-info" id="newSheet">📑 Nueva Hoja</button>
-        <input
-          type="text"
-          id="searchBox"
-          class="form-control w-25"
-          placeholder="🔍 Buscar estudiante..."
-        />
-      </div>
+          <button
+            class="btn btn-success"
+            data-bs-toggle="modal"
+            data-bs-target="#noteModal"
+          >
+            <i class="fas fa-plus"></i>
+            <span data-lang="addNoteButton">Añadir Nota</span>
+          </button>
+          <button
+            class="btn btn-warning"
+            data-bs-toggle="modal"
+            data-bs-target="#attendanceModal"
+          >
+            <i class="fas fa-clipboard-check"></i>
+            <span data-lang="attendanceButton">Asistencia</span>
+          </button>
+          <button class="btn btn-info" id="newSheet">
+            <i class="fas fa-file"></i>
+            <span data-lang="newSheetButton">Nueva Hoja</span>
+          </button>
+          <input
+            type="text"
+            id="searchBox"
+            class="form-control"
+            style="width: 250px"
+            data-lang-placeholder="searchPlaceholder"
+            placeholder="🔍 Buscar estudiante..."
+          />
+        </div>
 
-      <!-- Tabs para hojas -->
-      <ul class="nav nav-tabs" id="sheetsTabs"></ul>
+        <ul class="nav nav-tabs" id="sheetsTabs"></ul>
 
-      <!-- Tabla estudiantes -->
-      <div class="table-responsive table-container mt-3">
-        <table
-          class="table table-hover align-middle text-center"
-          id="studentsTable"
-        >
-          <thead class="table-dark sticky-top">
-            <tr>
-              <th data-col="nombre">Nombre</th>
-              <th data-col="notas">Notas</th>
-              <th data-col="media">Media</th>
-              <th data-col="faltas">Faltas</th>
-              <th data-col="retrasos">Retrasos</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
+        <div class="table-responsive table-container mt-3">
+          <table
+            class="table table-hover align-middle text-center"
+            id="studentsTable"
+          >
+            <thead class="table-dark sticky-top">
+              <tr>
+                <th data-col="nombre" data-lang="tableHeaderName">Nombre</th>
+                <th data-col="notas" data-lang="tableHeaderNotes">Notas</th>
+                <th data-col="media" data-lang="tableHeaderAverage">Media</th>
+                <th data-col="faltas" data-lang="tableHeaderAbsences">
+                  Faltas
+                </th>
+                <th data-col="retrasos" data-lang="tableHeaderTardies">
+                  Retrasos
+                </th>
+                <th
+                  data-col="porcentaje"
+                  data-lang="tableHeaderAbsencePercentage"
+                >
+                  % Faltas
+                </th>
+                <th data-lang="tableHeaderActions">Acciones</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
 
-      <!-- Estadísticas -->
-      <div class="mt-3">
-        <p><strong>Media global:</strong> <span id="globalAvg">0</span></p>
-        <p>
-          <strong>Porcentaje de faltas:</strong>
-          <span id="globalAbsence">0%</span>
+        <div class="mt-3 p-3 bg-light rounded" id="Stats">
+          <div
+            class="row justify-content-center align-items-center text-center"
+          >
+            <div class="col-md-4 mb-2 mb-md-0">
+              <p class="mb-0">
+                <strong data-lang="statsGlobalAverage">Media global:</strong>
+                <span id="globalAvg" class="badge bg-primary">0</span>
+              </p>
+            </div>
+            <div class="col-md-4 mb-2 mb-md-0">
+              <p class="mb-0">
+                <strong data-lang="statsAbsencePercentage"
+                  >Porcentaje de faltas:</strong
+                >
+                <span id="globalAbsence" class="badge bg-warning">0%</span>
+              </p>
+            </div>
+            <div class="col-md-4 mb-2 mb-md-0">
+              <p class="mb-0">
+                <strong data-lang="statsTotalClassDays"
+                  >Total días de clase:</strong
+                >
+                <span id="totalClassDays" class="badge bg-info">0</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </main>
+      <footer class="bg-dark text-center text-white py-3 mt-auto">
+        <p class="mb-0" data-lang="footerText">
+          © 2025 Pablo Almellones Ramos | Todos los derechos reservados
         </p>
-      </div>
-    </main>
-
-    <!-- FOOTER -->
-    <footer class="bg-dark text-center text-white py-3">
-      <p class="mb-0">
-        © 2025 Pablo Almellones Ramos | Todos los derechos reservados
-      </p>
-    </footer>
-
-    <!-- MODALES -->
-    <!-- Añadir estudiante -->
+      </footer>
+    </div>
     <div class="modal fade" id="studentModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Añadir Estudiante</h5>
+            <h5 class="modal-title" data-lang="modalAddStudentTitle">
+              Añadir Estudiante
+            </h5>
             <button
               type="button"
               class="btn-close"
@@ -117,25 +383,37 @@
               type="text"
               id="nameInput"
               class="form-control"
+              data-lang-placeholder="fullNamePlaceholder"
               placeholder="Nombre completo"
             />
           </div>
           <div class="modal-footer">
-            <button class="btn btn-secondary" data-bs-dismiss="modal">
+            <button
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+              data-lang="cancelButton"
+            >
               Cancelar
             </button>
-            <button class="btn btn-success" id="saveStudent">Guardar</button>
+            <button
+              class="btn btn-success"
+              id="saveStudent"
+              data-lang="saveButton"
+            >
+              Guardar
+            </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Añadir nota -->
     <div class="modal fade" id="noteModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Añadir Nota</h5>
+            <h5 class="modal-title" data-lang="modalAddNoteTitle">
+              Añadir Nota
+            </h5>
             <button
               type="button"
               class="btn-close"
@@ -148,6 +426,7 @@
               type="number"
               id="noteInput"
               class="form-control"
+              data-lang-placeholder="notePlaceholder"
               placeholder="Nota (0-10)"
               step="0.01"
               min="0"
@@ -155,16 +434,25 @@
             />
           </div>
           <div class="modal-footer">
-            <button class="btn btn-secondary" data-bs-dismiss="modal">
+            <button
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+              data-lang="cancelButton"
+            >
               Cancelar
             </button>
-            <button class="btn btn-success" id="saveNote">Guardar</button>
+            <button
+              class="btn btn-success"
+              id="saveNote"
+              data-lang="saveButton"
+            >
+              Guardar
+            </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Asistencia -->
     <div
       class="modal fade"
       id="attendanceModal"
@@ -174,7 +462,9 @@
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Registrar Asistencia</h5>
+            <h5 class="modal-title" data-lang="modalAttendanceTitle">
+              Registrar Asistencia
+            </h5>
             <button
               type="button"
               class="btn-close"
@@ -182,33 +472,49 @@
             ></button>
           </div>
           <div class="modal-body">
-            <!-- Input para la fecha -->
             <div class="mb-3">
-              <label for="attendanceDate" class="form-label">Fecha</label>
+              <label
+                for="attendanceDate"
+                class="form-label"
+                data-lang="classDateLabel"
+                >Fecha de la clase</label
+              >
               <input type="date" id="attendanceDate" class="form-control" />
             </div>
-            <table class="table text-center" id="attendanceTable">
-              <thead>
-                <tr>
-                  <th>Alumno</th>
-                  <th>Falta</th>
-                  <th>Retraso</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
+            <div class="table-responsive">
+              <table class="table text-center" id="attendanceTable">
+                <thead class="table-dark">
+                  <tr>
+                    <th data-lang="studentHeader">Alumno</th>
+                    <th data-lang="attendedHeader">Asistió</th>
+                    <th data-lang="absentHeader">Falta</th>
+                    <th data-lang="tardyHeader">Retraso</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
           </div>
           <div class="modal-footer">
-            <button class="btn btn-secondary" data-bs-dismiss="modal">
+            <button
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+              data-lang="cancelButton"
+            >
               Cancelar
             </button>
-            <button class="btn btn-success" id="saveAttendance">Guardar</button>
+            <button
+              class="btn btn-success"
+              id="saveAttendance"
+              data-lang="saveAttendanceButton"
+            >
+              Guardar Asistencia
+            </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Modal Editar Estudiante -->
     <div
       class="modal fade"
       id="editStudentModal"
@@ -218,7 +524,9 @@
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Editar Estudiante</h5>
+            <h5 class="modal-title" data-lang="modalEditStudentTitle">
+              Editar Estudiante
+            </h5>
             <button
               type="button"
               class="btn-close"
@@ -227,38 +535,33 @@
           </div>
           <div class="modal-body">
             <div class="mb-3">
-              <label for="editStudentName" class="form-label"
+              <label
+                for="editStudentName"
+                class="form-label"
+                data-lang="fullNameLabel"
                 >Nombre completo</label
               >
               <input type="text" id="editStudentName" class="form-control" />
             </div>
 
             <div class="mb-3">
-              <label class="form-label">Notas</label>
-              <div id="editNotesContainer">
-                <!-- Las notas se generarán dinámicamente aquí -->
-              </div>
+              <label class="form-label" data-lang="notesLabel">Notas</label>
+              <div id="editNotesContainer"></div>
               <button
                 type="button"
                 class="btn btn-sm btn-success mt-2"
                 onclick="addNoteField()"
               >
-                ➕ Añadir Nota
+                <i class="fas fa-plus"></i>
+                <span data-lang="addNoteButton">Añadir Nota</span>
               </button>
             </div>
 
             <div class="mb-3">
-              <label class="form-label">Asistencia por fecha</label>
-              <div id="editAttendanceContainer">
-                <!-- Aquí se generarán las filas de asistencia -->
-              </div>
-              <button
-                type="button"
-                class="btn btn-sm btn-success mt-2"
-                onclick="addAttendanceField()"
+              <label class="form-label" data-lang="attendanceByDateLabel"
+                >Asistencia por fecha</label
               >
-                ➕ Añadir Fecha
-              </button>
+              <div id="editAttendanceContainer"></div>
             </div>
           </div>
           <div class="modal-footer">
@@ -266,11 +569,86 @@
               type="button"
               class="btn btn-secondary"
               data-bs-dismiss="modal"
+              data-lang="cancelButton"
             >
               Cancelar
             </button>
-            <button type="button" class="btn btn-primary" id="saveEditStudent">
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="saveEditStudent"
+              data-lang="saveChangesButton"
+            >
               Guardar Cambios
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="modal fade"
+      id="notesChartModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5
+              class="modal-title"
+              id="chartModalTitle"
+              data-lang="modalChartTitle"
+            >
+              Evolución de Notas
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div
+              class="chart-container"
+              style="position: relative; height: 400px; width: 100%"
+            >
+              <canvas id="notesChart"></canvas>
+            </div>
+            <div class="mt-3">
+              <div class="row text-center">
+                <div class="col-lg-4 mb-3">
+                  <p class="mb-1">
+                    <strong data-lang="chartAverageNote">Nota Media:</strong>
+                  </p>
+                  <span id="chartAverage" class="badge bg-primary fs-6"
+                    >...</span
+                  >
+                </div>
+                <div class="col-lg-4 mb-3">
+                  <p class="mb-1">
+                    <strong data-lang="chartTotalNotes">Total Notas:</strong>
+                  </p>
+                  <span id="chartTotalNotes" class="badge bg-success fs-6"
+                    >...</span
+                  >
+                </div>
+                <div class="col-lg-4 mb-3">
+                  <p class="mb-1">
+                    <strong data-lang="chartTrend">Tendencia:</strong>
+                  </p>
+                  <span id="chartTrend" class="badge bg-info fs-6">...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+              data-lang="closeButton"
+            >
+              Cerrar
             </button>
           </div>
         </div>
@@ -279,18 +657,15 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="script.js"></script>
-    <script type="module">
-      // Import the functions you need from the SDKs you need
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-      import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
-      // TODO: Add SDKs for Firebase products that you want to use
-      // https://firebase.google.com/docs/web/setup#available-libraries
 
-      // Your web app's Firebase configuration
-      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app-check.js"></script>
+
+    <script>
       const firebaseConfig = {
-        apiKey: "AIzaSyCKMHt0HG9-2j8zp1d65N8sTbl3RAoV_bg",
+        apiKey: "__FIREBASE_API_KEY__",
         authDomain: "sistemagestorestudiantes.firebaseapp.com",
         projectId: "sistemagestorestudiantes",
         storageBucket: "sistemagestorestudiantes.firebasestorage.app",
@@ -299,9 +674,11 @@
         measurementId: "G-SV8DJYFLZE",
       };
 
-      // Initialize Firebase
-      const app = initializeApp(firebaseConfig);
-      const analytics = getAnalytics(app);
+      const app = firebase.initializeApp(firebaseConfig);
+
+      const auth = firebase.auth();
+      const db = firebase.firestore();
     </script>
+    <script src="script.js"></script>
   </body>
 </html>
