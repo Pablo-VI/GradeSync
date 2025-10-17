@@ -217,6 +217,10 @@ thead.sticky-top th {
   position: relative;
   padding-right: 25px !important;
 }
+#studentsTable thead th[data-col]:not(.sort-asc):not(.sort-desc) {
+  text-align: center;
+  padding-left: 15px;
+}
 #studentsTable thead th[data-col]:hover {
   background-color: #4c4c4d !important;
 }
@@ -591,6 +595,15 @@ thead.sticky-top th {
   #user-info {
     display: none !important;
   }
+
+  #studentsTable thead th {
+    white-space: nowrap;
+  }
+
+  #studentsTable th[data-lang="tableHeaderActions"],
+  #studentsTable td:last-child {
+    min-width: 75px;
+  }
 }
 
 /* --- MÓVIL (hasta 767px) --- */
@@ -637,12 +650,12 @@ thead.sticky-top th {
       display: none !important;
     }
 
-    #studentsTable thead th{
-    font-size: 0.5rem;
-  }
-  #studentsTable tbody td {
-    font-size: 0.6rem;
-  }
+    #studentsTable thead th {
+      font-size: 0.5rem;
+    }
+    #studentsTable tbody td {
+      font-size: 0.6rem;
+    }
     #studentsTable .btn-sm {
       padding: 0.2rem 0.4rem;
       font-size: 0.5rem;
