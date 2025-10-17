@@ -52,28 +52,28 @@
 /* --- Estructura base --- */
 html,
 body {
-  height: 100% !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow: hidden !important;
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  display: flex !important;
-  flex-direction: column !important;
-  min-height: 100vh !important;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
   background-color: #f8f9fa;
   transition: all 0.3s ease;
 }
 
 #app {
-  display: flex !important;
-  flex-direction: column !important;
-  height: 100vh !important;
-  width: 100% !important;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
 }
 
-#app header {
+#app header,
+#app footer {
   flex-shrink: 0;
   z-index: 1000;
 }
@@ -81,13 +81,16 @@ body {
 #app main {
   flex-grow: 1;
   overflow-y: auto;
+  min-height: 0;
   padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
+
+  /* --- Ocultar la barra de scroll --- */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-#app footer {
-  flex-shrink: 0;
+#app main::-webkit-scrollbar {
+  display: none;
 }
 
 /* --- Animaciones --- */
@@ -215,7 +218,7 @@ thead.sticky-top th {
   padding-right: 25px !important;
 }
 #studentsTable thead th[data-col]:hover {
-  background-color: #e9ecef !important;
+  background-color: #4c4c4d !important;
 }
 #studentsTable thead th.sort-asc::after,
 #studentsTable thead th.sort-desc::after {
@@ -234,6 +237,23 @@ thead.sticky-top th {
 }
 #studentsTable thead th.sort-desc::after {
   border-top: 5px solid currentColor;
+}
+
+/* Indicador visual para columnas ordenables (cuando no están activas) */
+#studentsTable thead th[data-col]:not(.sort-asc):not(.sort-desc)::before {
+  content: "↕";
+  position: absolute;
+  right: 15px;
+  top: 49%;
+  transform: translateY(-50%);
+  font-size: 0.8em;
+  opacity: 0.4;
+  transition: opacity 0.2s ease;
+}
+
+/* Efecto hover para el indicador visual */
+#studentsTable thead th[data-col]:not(.sort-asc):not(.sort-desc):hover::before {
+  opacity: 0.8;
 }
 
 /* Hover en celda de notas */
@@ -556,6 +576,21 @@ thead.sticky-top th {
   .search-box {
     width: 100%;
   }
+  #Stats p {
+    font-size: 0.95rem; /* Un 12.5% más pequeño que el tamaño normal */
+  }
+  #studentsTable .btn-sm {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* --- PANTALLAS INTERMEDIAS --- */
+@media (max-width: 888px) {
+  /* Ocultar el saludo */
+  #user-info {
+    display: none !important;
+  }
 }
 
 /* --- MÓVIL (hasta 767px) --- */
@@ -568,58 +603,53 @@ thead.sticky-top th {
     padding-top: 1rem !important;
     padding-bottom: 1rem !important;
   }
-  .header-actions {
-    width: 100%;
-  }
-  .header-user-info {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .header-user-info #user-info {
-    order: -1;
-  }
 
   /* Ocultar texto en botones */
-  .btn-responsive-text,
-  #themeToggle .d-none.d-md-inline,
-  #langToggle .d-none.d-md-inline,
-  #logout-btn .d-none.d-md-inline {
+  #themeToggle span,
+  #langToggle span,
+  #logout-btn span {
     display: none !important;
   }
-  #app header h2.d-none.d-md-inline {
-    display: none !important;
+  #app header img {
+    height: 50px !important;
+    margin-right: 0 !important;
   }
-
-  /* Controles Principales */
-  .main-controls .btn {
-    flex-grow: 1;
+  #app header h2 {
+    display: none !important;
   }
 
   /* Tabla */
   .table {
-    font-size: 0.875rem;
+    font-size: 0.7rem;
   }
   .table th,
   .table td {
     padding: 0.5rem 0.25rem;
   }
-
-  /* Estadísticas */
-  .stats-row > div {
-    text-align: left !important;
-    margin-bottom: 0.5rem !important;
-  }
-  .stats-row p {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  #studentsTable .btn-sm {
+    padding: 0.15rem 0.35rem;
+    font-size: 0.65rem;
   }
 
-  /* Tarjeta de Login */
-  .login-card {
-    width: 90%;
-    max-width: 400px;
+  /* --- MÓVIL PEQUEÑO (hasta 510px) --- */
+  @media (max-width: 510px) {
+    #studentsTable thead th[data-col]:not(.sort-asc):not(.sort-desc)::before {
+      display: none !important;
+    }
+
+    #studentsTable thead th{
+    font-size: 0.5rem;
+  }
+  #studentsTable tbody td {
+    font-size: 0.6rem;
+  }
+    #studentsTable .btn-sm {
+      padding: 0.2rem 0.4rem;
+      font-size: 0.5rem;
+    }
+
+    .table {
+      font-size: 0.8rem;
+    }
   }
 }
