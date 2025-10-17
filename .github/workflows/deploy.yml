@@ -1,0 +1,26 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main # O la rama que uses como principal, ej: master
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v3
+
+      - name: Replace Firebase API Key 🔑
+        uses: datamonsters/replace-action@v2
+        with:
+          files: "index.html"
+          replacements: |
+            __FIREBASE_API_KEY__=${{ secrets.FIREBASE_API_KEY }}
+
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages # La rama donde se desplegará
+          folder: . # Despliega desde la raíz del proyecto
